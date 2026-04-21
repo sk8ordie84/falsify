@@ -52,6 +52,7 @@ reproducible from what's on disk.
 | `falsify.py::cmd_diff`    | unified diff between the locked canonical YAML and the current spec    |
 | `falsify.py::cmd_list`    | enumerate spec states with lock hash + last run + verdict              |
 | `falsify.py::cmd_hook`    | install / uninstall commit-msg guard with backup                       |
+| `falsify.py::cmd_doctor`  | environment + repo + per-spec health check                             |
 
 ## Why SHA-256 of canonical YAML (not of the raw file)
 

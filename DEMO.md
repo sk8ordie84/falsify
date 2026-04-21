@@ -110,6 +110,14 @@ Installs the commit-msg guard; backs up any pre-existing hook.
 Now a commit message that asserts a falsified claim is rejected
 before it enters history — the same mechanism CI uses on every push.
 
+## Bonus — health check
+
+```bash
+python3 falsify.py doctor
+```
+
+End-to-end diagnostic — what's OK, what needs attention.
+
 ## Bonus — detect a tampered spec
 
 ```bash

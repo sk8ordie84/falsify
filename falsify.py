@@ -1177,6 +1177,234 @@ def _hook_uninstall(args: argparse.Namespace) -> int:
     return EXIT_PASS
 
 
+def _doctor_env_checks() -> list[dict]:
+    out: list[dict] = []
+
+    pyver = sys.version_info
+    pv_str = platform.python_version()
+    if (pyver.major, pyver.minor) >= (3, 11):
+        out.append({
+            "level": "OK",
+            "message": f"Python version: {pv_str}",
+            "detail": None,
+        })
+    else:
+        out.append({
+            "level": "WARN",
+            "message": f"Python version: {pv_str} (project targets 3.11+)",
+            "detail": None,
+        })
+
+    out.append({
+        "level": "OK",
+        "message": f"pyyaml importable: {yaml.__version__}",
+        "detail": None,
+    })
+
+    repo_root = _git_repo_root()
+    if repo_root is None:
+        out.append({
+            "level": "WARN",
+            "message": "Not in a git repository (or git not installed)",
+            "detail": None,
+        })
+        return out
+
+    out.append({
+        "level": "OK",
+        "message": f"Git repo: {repo_root}",
+        "detail": None,
+    })
+
+    source_hook = repo_root / "hooks" / "commit-msg"
+    if source_hook.exists():
+        out.append({
+            "level": "OK",
+            "message": "hooks/commit-msg source present",
+            "detail": None,
+        })
+    else:
+        out.append({
+            "level": "WARN",
+            "message": f"hooks/commit-msg missing at {source_hook}",
+            "detail": None,
+        })
+
+    installed = repo_root / ".git" / "hooks" / "commit-msg"
+    if not installed.exists():
+        out.append({
+            "level": "INFO",
+            "message": "commit-msg hook not installed",
+            "detail": "run `falsify hook install` to enable the guard",
+        })
+    elif source_hook.exists():
+        if _sha256_file(installed) == _sha256_file(source_hook):
+            out.append({
+                "level": "OK",
+                "message": "commit-msg hook installed and matches source",
+                "detail": None,
+            })
+        else:
+            out.append({
+                "level": "WARN",
+                "message": "Hook installed but hash mismatch with hooks/commit-msg",
+                "detail": "re-run `falsify hook install` to refresh",
+            })
+    else:
+        out.append({
+            "level": "INFO",
+            "message": "commit-msg hook installed; source missing, can't verify",
+            "detail": None,
+        })
+    return out
+
+
+def _doctor_spec_checks() -> list[dict]:
+    out: list[dict] = []
+    try:
+        schema = _load_schema()
+    except (yaml.YAMLError, OSError, FileNotFoundError):
+        schema = None
+
+    now = datetime.now(timezone.utc)
+    for claim_dir in _iter_claim_dirs(FALSIFY_DIR):
+        name = claim_dir.name
+        spec_path = claim_dir / "spec.yaml"
+        lock_path = claim_dir / "spec.lock.json"
+        verdict_path = claim_dir / "verdict.json"
+
+        try:
+            spec = yaml.safe_load(spec_path.read_text())
+        except (yaml.YAMLError, OSError) as e:
+            out.append({
+                "level": "FAIL",
+                "message": f"{name}: spec.yaml failed to parse",
+                "detail": str(e),
+            })
+            continue
+
+        if schema is not None:
+            errors: list[str] = []
+            _validate_against_schema(spec, schema, "", errors)
+            if errors:
+                out.append({
+                    "level": "FAIL",
+                    "message": f"{name}: spec.yaml failed schema validation",
+                    "detail": errors[0],
+                })
+                continue
+
+        out.append({
+            "level": "OK",
+            "message": f"{name}: spec.yaml valid",
+            "detail": None,
+        })
+
+        if not lock_path.exists():
+            out.append({
+                "level": "INFO",
+                "message": f"{name}: not locked yet",
+                "detail": None,
+            })
+            continue
+
+        if not verdict_path.exists():
+            out.append({
+                "level": "INFO",
+                "message": f"{name}: locked but not run",
+                "detail": None,
+            })
+            continue
+
+        try:
+            verdict_data = json.loads(verdict_path.read_text())
+        except (OSError, json.JSONDecodeError) as e:
+            out.append({
+                "level": "WARN",
+                "message": f"{name}: verdict.json unreadable",
+                "detail": str(e),
+            })
+            continue
+
+        state = verdict_data.get("verdict", "UNKNOWN")
+        out.append({
+            "level": "OK" if state == "PASS" else "INFO",
+            "message": f"{name}: last verdict {state}",
+            "detail": None,
+        })
+
+        checked_at = verdict_data.get("checked_at")
+        if isinstance(checked_at, str):
+            try:
+                t = datetime.fromisoformat(checked_at)
+                age_days = (now - t).days
+                if age_days > 7:
+                    out.append({
+                        "level": "WARN",
+                        "message": f"{name}: last run is {age_days} days old (stale)",
+                        "detail": None,
+                    })
+            except ValueError:
+                pass
+
+    return out
+
+
+def _doctor_workflow_check() -> list[dict]:
+    workflow = Path(".github/workflows/falsify.yml")
+    if not workflow.exists():
+        return [{
+            "level": "INFO",
+            "message": "No CI workflow at .github/workflows/falsify.yml",
+            "detail": None,
+        }]
+    try:
+        yaml.safe_load(workflow.read_text())
+    except yaml.YAMLError as e:
+        return [{
+            "level": "WARN",
+            "message": "CI workflow present but not valid YAML",
+            "detail": str(e),
+        }]
+    return [{
+        "level": "OK",
+        "message": "CI workflow parses",
+        "detail": None,
+    }]
+
+
+def cmd_doctor(args: argparse.Namespace) -> int:
+    checks: list[dict] = []
+    if not args.specs_only:
+        checks.extend(_doctor_env_checks())
+    checks.extend(_doctor_spec_checks())
+    if not args.specs_only:
+        checks.extend(_doctor_workflow_check())
+
+    summary = {"ok": 0, "warn": 0, "fail": 0, "info": 0}
+    for c in checks:
+        summary[c["level"].lower()] = summary.get(c["level"].lower(), 0) + 1
+
+    if args.json:
+        print(json.dumps(
+            {"checks": checks, "summary": summary},
+            indent=2,
+            sort_keys=True,
+        ))
+    else:
+        for c in checks:
+            print(f"[{c['level']}] {c['message']}")
+            if c.get("detail"):
+                print(f"       {c['detail']}")
+        print()
+        print(
+            f"Summary: {summary['ok']} OK, {summary['warn']} WARN, "
+            f"{summary['fail']} FAIL, {summary['info']} INFO"
+        )
+
+    return EXIT_BAD_SPEC if summary["fail"] > 0 else EXIT_PASS
+
+
 def cmd_hook(args: argparse.Namespace) -> int:
     if args.action == "install":
         return _hook_install(args)
@@ -1262,6 +1490,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="Claim text, or `-- cmd args...` for wrap mode",
     )
     p_guard.set_defaults(func=cmd_guard)
+
+    p_doctor = sub.add_parser(
+        "doctor",
+        help="Self-diagnostic: environment + repo + per-spec checks",
+    )
+    p_doctor.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit machine-readable JSON",
+    )
+    p_doctor.add_argument(
+        "--specs-only",
+        action="store_true",
+        help="Run only per-spec checks (skip environment and CI checks)",
+    )
+    p_doctor.set_defaults(func=cmd_doctor)
 
     p_hook = sub.add_parser(
         "hook",
