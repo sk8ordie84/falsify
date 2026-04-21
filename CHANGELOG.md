@@ -27,6 +27,10 @@ numbers follow [Semantic Versioning](https://semver.org).
   dark-mode-aware inline CSS, per-spec cards with state-colored
   badges. `--output PATH` writes to a file. `--json` and `--html`
   are mutually exclusive.
+- `Dockerfile` + `.dockerignore` — reproducible demo environment
+  (`docker run --rm -it falsify-demo` fires the auto-demo).
+- `docs/DOCKER.md` — quick run, interactive session, repo-mount,
+  image size + build-determinism notes.
 
 ### Notes
 

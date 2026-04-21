@@ -46,6 +46,16 @@ After install, `falsify` is available as a command on your `PATH`
 — no `python3 falsify.py` prefix needed. The `-e` editable form is
 handy during development; drop the flag for a regular install.
 
+### Docker
+
+```bash
+docker build -t falsify-demo . && docker run --rm -it falsify-demo
+```
+
+Runs the auto-demo in a clean container. See
+[docs/DOCKER.md](docs/DOCKER.md) for interactive and repo-mount
+modes.
+
 ## Quickstart
 
 ```bash

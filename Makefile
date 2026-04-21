@@ -1,4 +1,4 @@
-.PHONY: help install test smoke ci demo demo-script doctor clean lint-skills version
+.PHONY: help install test smoke ci demo demo-script doctor clean lint-skills version docker-build docker-run
 
 help:
 	@echo "Falsification Engine — common targets"
@@ -12,6 +12,8 @@ help:
 	@echo "  make lint-skills  — validate skill/agent frontmatter"
 	@echo "  make version      — print current falsify version"
 	@echo "  make clean        — remove generated .falsify/ runs (keep specs)"
+	@echo "  make docker-build — build the falsify-demo Docker image"
+	@echo "  make docker-run   — run the auto-demo in a container"
 
 install:
 	pip install pyyaml
@@ -50,3 +52,9 @@ clean:
 	@find .falsify -type d -name 'runs' -exec rm -rf {} + 2>/dev/null || true
 	@find .falsify -name 'verdict.json' -delete 2>/dev/null || true
 	@echo "Cleaned .falsify/*/runs and verdict.json (specs preserved)"
+
+docker-build:
+	docker build -t falsify-demo .
+
+docker-run:
+	docker run --rm -it falsify-demo

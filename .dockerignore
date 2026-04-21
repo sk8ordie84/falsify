@@ -1,0 +1,19 @@
+.git/
+.falsify/*/runs/
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+.pytest_cache/
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*~
+node_modules/
+dist/
+build/
+*.egg-info/
+
+# Keep committed fixtures (examples/juju_sample/) — do NOT ignore them.

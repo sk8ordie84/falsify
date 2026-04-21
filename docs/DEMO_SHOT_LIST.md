@@ -8,6 +8,14 @@ Total budget 180 seconds. Hard cap 210 seconds.
 - Voiceover: "AI agents make claims. This makes those claims falsifiable — before the data arrives."
 - Transition: Cut to terminal.
 
+## Alt-Scene 0 — Docker cold open (optional swap for Scene 0)
+
+- Visual: single terminal line — `docker run --rm -it falsify-demo`
+- Cut directly to the auto-demo output scrolling.
+- Voiceover: "One docker run. No Python setup. Watch the whole story."
+- Use this version if we want to emphasize zero-setup install over
+  the philosophical cold open.
+
 ## Scene 1 — The problem (0:12–0:30, 18s)
 
 - Visual: Terminal showing fake agent output: My model achieves 92 percent accuracy.
