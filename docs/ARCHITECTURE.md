@@ -99,8 +99,12 @@ without paging.
 
 ## Extension points
 
-- MCP server exposing `verdict.json` as a Claude-tool resource so
-  verdicts are queryable across sessions and other Claude surfaces.
+- **Shipped in 0.1.0 (optional install):** MCP server exposing
+  `verdict.json` as a Claude-tool resource so verdicts are
+  queryable across sessions and other Claude surfaces. See
+  [`mcp_server/`](../mcp_server/) — the four tool functions are
+  implemented; the `stdio_server` SDK adapter is scaffolded for
+  0.2.0. Install with `pip install -e '.[mcp]'`.
 - Managed Agents cloud deployment for scheduled verdict refresh
   (replaces manually invoking `verdict-refresher`).
 - Git `pre-push` hook alongside the existing `commit-msg` hook —

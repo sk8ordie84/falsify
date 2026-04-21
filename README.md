@@ -120,6 +120,23 @@ and a skill-lint pass over every SKILL.md and agent file.
   prediction calibration, LLM agreement, AB test):
   [docs/EXAMPLES.md](docs/EXAMPLES.md).
 
+## MCP integration
+
+Expose the verdict store to Claude Desktop / Claude Code via
+Model Context Protocol. Install the optional extra:
+
+```bash
+pip install -e '.[mcp]'
+```
+
+Then merge the snippet in
+[`mcp_server/claude_desktop_config.example.json`](mcp_server/claude_desktop_config.example.json)
+into your Claude Desktop config, pointing `cwd` at your local
+clone. Claude can now query verdicts, stats, and run claim-audits
+against the log without shelling out. See
+[`mcp_server/README.md`](mcp_server/README.md) for the exposed
+resources and tool signatures.
+
 ## Install the git hook
 
 ```bash

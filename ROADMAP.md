@@ -15,6 +15,9 @@ See [CHANGELOG.md](CHANGELOG.md) for the full list. Highlights:
 - Three Claude Code skills and two forked-context subagents.
 - `DEMO.md`, `docs/ARCHITECTURE.md`, `docs/EXAMPLES.md`.
 - MIT licensed, installable via `pip install .`.
+- MCP verdict-log server scaffold (`mcp_server/`) — tool functions
+  implemented, SDK adapter stubbed; install with
+  `pip install -e '.[mcp]'`.
 
 ## Next — 0.2.0 target (May 2026)
 

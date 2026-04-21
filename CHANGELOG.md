@@ -12,6 +12,12 @@ numbers follow [Semantic Versioning](https://semver.org).
   `falsify` console entry point (`falsify:main`).
 - `ROADMAP.md` — post-hackathon direction (0.2.0 MCP + Managed
   Agents, 0.3.0 Bayesian stopping, non-goals, discipline note).
+- `mcp_server/` — Model Context Protocol server scaffold exposing
+  the verdict store as read-only resources and four tool
+  functions (`list_verdicts`, `get_verdict`, `get_stats`,
+  `check_claim`). Optional install via `pip install -e '.[mcp]'`;
+  tool logic is implemented, `stdio_server` SDK adapter is
+  stubbed pending SDK version pin.
 
 ### Notes
 

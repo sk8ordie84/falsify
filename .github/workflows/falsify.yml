@@ -36,6 +36,22 @@ jobs:
       - name: Guard self-check (text mode, no violations expected)
         run: python3 falsify.py guard "brier score below 0.25 holds"
 
+  mcp-test:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install core + mcp extra
+        run: pip install pyyaml mcp
+
+      - name: Run MCP server tests only
+        run: python -m unittest tests.test_mcp_server -v
+
   skill-lint:
     runs-on: ubuntu-latest
     steps:
