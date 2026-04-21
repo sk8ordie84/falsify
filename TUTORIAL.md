@@ -42,6 +42,13 @@ spec, run artifact, and verdict lives. One subdirectory per claim.
 
 ## Step 2 — Write your first claim
 
+> **In a hurry?** Run `falsify init --template accuracy` to get a
+> working `claims/accuracy/` (spec + metric + dataset) plus a
+> mirrored `.falsify/accuracy/spec.yaml`, and skip ahead to Step 3.
+> Five templates ship: `accuracy`, `latency`, `brier`, `llm-judge`,
+> `ab`. The walkthrough below builds the same structure by hand so
+> you understand what each piece does.
+
 You need two files: a Python metric function and a spec. Put the
 metric at `claims/vowels.py`:
 

@@ -58,8 +58,344 @@ _TYPE_CHECKERS: dict[str, Callable[[Any], bool]] = {
 }
 
 
+_INIT_TEMPLATES: dict[str, dict[str, str]] = {
+    "accuracy": {
+        "spec.yaml": (
+            'claim: "Classifier accuracy is at least 80% on the holdout sample."\n'
+            "falsification:\n"
+            "  failure_criteria:\n"
+            "    - metric: accuracy\n"
+            "      direction: above\n"
+            "      threshold: 0.80\n"
+            "  minimum_sample_size: 20\n"
+            '  stopping_rule: "fixed-n"\n'
+            "experiment:\n"
+            '  command: "echo ready"\n'
+            '  dataset: "data.csv"\n'
+            '  metric_fn: "__MODULE_PATH__.metric:accuracy"\n'
+        ),
+        "metric.py": (
+            '"""Classifier accuracy: matches / total."""\n'
+            "import csv\n"
+            "from pathlib import Path\n\n"
+            "def accuracy(_run_dir):\n"
+            '    path = Path(__file__).parent / "data.csv"\n'
+            "    rows = list(csv.DictReader(path.open()))\n"
+            "    if not rows:\n"
+            "        return 0.0, 0\n"
+            '    correct = sum(1 for r in rows if r["predicted"] == r["actual"])\n'
+            "    return correct / len(rows), len(rows)\n"
+        ),
+        "data.csv": (
+            "id,predicted,actual\n"
+            "1,cat,cat\n2,dog,dog\n3,bird,bird\n4,cat,dog\n5,dog,dog\n"
+            "6,cat,cat\n7,bird,bird\n8,dog,bird\n9,cat,cat\n10,dog,dog\n"
+            "11,bird,bird\n12,cat,cat\n13,dog,bird\n14,cat,cat\n15,dog,dog\n"
+            "16,bird,bird\n17,cat,cat\n18,dog,dog\n19,bird,bird\n20,cat,cat\n"
+        ),
+        "README.md": (
+            "# accuracy template\n\n"
+            "Asserts a classifier's holdout accuracy is at least 80%.\n\n"
+            "**Files:** `spec.yaml` (claim + threshold), `metric.py`\n"
+            "(stdlib `csv` reader), `data.csv` (20 hand-crafted rows,\n"
+            "17 correct → 0.85). The shipped data passes; mutate it to\n"
+            "make it fail.\n\n"
+            "**Modify:** swap `data.csv` for your own holdout, retune\n"
+            "the `threshold` in `spec.yaml`, then `lock --force`.\n"
+            "See [TUTORIAL.md](../../TUTORIAL.md) for the full pipeline.\n"
+        ),
+    },
+    "latency": {
+        "spec.yaml": (
+            'claim: "P95 request latency stays below 200ms."\n'
+            "falsification:\n"
+            "  failure_criteria:\n"
+            "    - metric: p95_latency_ms\n"
+            "      direction: below\n"
+            "      threshold: 200\n"
+            "  minimum_sample_size: 20\n"
+            '  stopping_rule: "fixed-n"\n'
+            "experiment:\n"
+            '  command: "echo ready"\n'
+            '  dataset: "data.csv"\n'
+            '  metric_fn: "__MODULE_PATH__.metric:p95_latency"\n'
+        ),
+        "metric.py": (
+            '"""P95 latency: nearest-rank percentile over latency_ms column."""\n'
+            "import csv\n"
+            "import math\n"
+            "from pathlib import Path\n\n"
+            "def p95_latency(_run_dir):\n"
+            '    path = Path(__file__).parent / "data.csv"\n'
+            '    values = sorted(float(r["latency_ms"])\n'
+            "                    for r in csv.DictReader(path.open()))\n"
+            "    n = len(values)\n"
+            "    if n == 0:\n"
+            "        return 0.0, 0\n"
+            "    idx = max(0, math.ceil(0.95 * n) - 1)\n"
+            "    return values[idx], n\n"
+        ),
+        "data.csv": (
+            "request_id,latency_ms\n"
+            "r01,52\nr02,67\nr03,71\nr04,84\nr05,55\n"
+            "r06,90\nr07,73\nr08,68\nr09,82\nr10,95\n"
+            "r11,77\nr12,61\nr13,88\nr14,79\nr15,66\n"
+            "r16,103\nr17,124\nr18,182\nr19,191\nr20,196\n"
+        ),
+        "README.md": (
+            "# latency template\n\n"
+            "Asserts a service's p95 request latency stays under 200ms.\n\n"
+            "**Files:** `spec.yaml` (threshold = 200, direction = below),\n"
+            "`metric.py` (nearest-rank p95 over the `latency_ms` column),\n"
+            "`data.csv` (20 hand-crafted samples; sorted index 18 is 191ms).\n\n"
+            "**Modify:** point `data.csv` at your own benchmark output,\n"
+            "tune `threshold` in `spec.yaml`, then `lock --force`. See\n"
+            "[TUTORIAL.md](../../TUTORIAL.md).\n"
+        ),
+    },
+    "brier": {
+        "spec.yaml": (
+            'claim: "Probabilistic predictions are calibrated (Brier score below 0.25)."\n'
+            "falsification:\n"
+            "  failure_criteria:\n"
+            "    - metric: brier_score\n"
+            "      direction: below\n"
+            "      threshold: 0.25\n"
+            "  minimum_sample_size: 20\n"
+            '  stopping_rule: "fixed-n"\n'
+            "experiment:\n"
+            '  command: "echo ready"\n'
+            '  dataset: "data.csv"\n'
+            '  metric_fn: "__MODULE_PATH__.metric:brier_score"\n'
+        ),
+        "metric.py": (
+            '"""Brier score: mean squared error between predicted_prob and actual."""\n'
+            "import csv\n"
+            "from pathlib import Path\n\n"
+            "def brier_score(_run_dir):\n"
+            '    path = Path(__file__).parent / "data.csv"\n'
+            "    rows = list(csv.DictReader(path.open()))\n"
+            "    if not rows:\n"
+            "        return 0.0, 0\n"
+            '    total = sum((float(r["predicted_prob"]) - float(r["actual"])) ** 2\n'
+            "                for r in rows)\n"
+            "    return total / len(rows), len(rows)\n"
+        ),
+        "data.csv": (
+            "event_id,predicted_prob,actual\n"
+            "e01,0.90,1\ne02,0.10,0\ne03,0.85,1\ne04,0.15,0\ne05,0.92,1\n"
+            "e06,0.08,0\ne07,0.78,1\ne08,0.22,0\ne09,0.88,1\ne10,0.12,0\n"
+            "e11,0.83,1\ne12,0.18,0\ne13,0.95,1\ne14,0.05,0\ne15,0.80,1\n"
+            "e16,0.20,0\ne17,0.85,0\ne18,0.15,1\ne19,0.90,1\ne20,0.10,0\n"
+        ),
+        "README.md": (
+            "# brier template\n\n"
+            "Asserts probabilistic predictions are calibrated: Brier\n"
+            "score (mean squared error vs the binary actual) below 0.25.\n\n"
+            "**Files:** `spec.yaml`, `metric.py` (one-liner Brier), and\n"
+            "20 rows of `(event_id, predicted_prob, actual)` in\n"
+            "`data.csv`. Shipped data has 18 confident-correct + 2\n"
+            "confident-wrong → Brier ≈ 0.09.\n\n"
+            "**Modify:** swap in your model's calibration data; retune\n"
+            "threshold; `lock --force`. See [TUTORIAL.md](../../TUTORIAL.md).\n"
+        ),
+    },
+    "llm-judge": {
+        "spec.yaml": (
+            'claim: "LLM judges agree with the reference at least 75% of the time."\n'
+            "falsification:\n"
+            "  failure_criteria:\n"
+            "    - metric: agreement_rate\n"
+            "      direction: above\n"
+            "      threshold: 0.75\n"
+            "  minimum_sample_size: 20\n"
+            '  stopping_rule: "fixed-n"\n'
+            "experiment:\n"
+            '  command: "echo ready"\n'
+            '  dataset: "data.jsonl"\n'
+            '  metric_fn: "__MODULE_PATH__.metric:agreement_rate"\n'
+        ),
+        "metric.py": (
+            '"""LLM-judge agreement rate: fraction of rows where agreement is true."""\n'
+            "import json\n"
+            "from pathlib import Path\n\n"
+            "def agreement_rate(_run_dir):\n"
+            '    path = Path(__file__).parent / "data.jsonl"\n'
+            "    rows = []\n"
+            "    with path.open() as f:\n"
+            "        for line in f:\n"
+            "            line = line.strip()\n"
+            "            if line:\n"
+            "                rows.append(json.loads(line))\n"
+            "    if not rows:\n"
+            "        return 0.0, 0\n"
+            '    agree = sum(1 for r in rows if r.get("agreement"))\n'
+            "    return agree / len(rows), len(rows)\n"
+        ),
+        "data.jsonl": (
+            '{"prompt": "2+2?", "answer_a": "4", "answer_b": "Four", "agreement": true}\n'
+            '{"prompt": "Capital of France?", "answer_a": "Paris", "answer_b": "Paris", "agreement": true}\n'
+            '{"prompt": "Color of the sky?", "answer_a": "Blue", "answer_b": "Cyan", "agreement": false}\n'
+            '{"prompt": "Speed of light unit?", "answer_a": "m/s", "answer_b": "meters per second", "agreement": true}\n'
+            '{"prompt": "Largest ocean?", "answer_a": "Pacific", "answer_b": "Pacific Ocean", "agreement": true}\n'
+            '{"prompt": "Pi to 2 decimals?", "answer_a": "3.14", "answer_b": "3.14159", "agreement": false}\n'
+            '{"prompt": "Author of 1984?", "answer_a": "Orwell", "answer_b": "George Orwell", "agreement": true}\n'
+            '{"prompt": "Boiling point of water (C)?", "answer_a": "100", "answer_b": "100", "agreement": true}\n'
+            '{"prompt": "Number of planets?", "answer_a": "8", "answer_b": "9", "agreement": false}\n'
+            '{"prompt": "JS framework by Facebook?", "answer_a": "React", "answer_b": "React.js", "agreement": true}\n'
+            '{"prompt": "DNA base count?", "answer_a": "4", "answer_b": "Four", "agreement": true}\n'
+            '{"prompt": "Symbol for gold?", "answer_a": "Au", "answer_b": "Au", "agreement": true}\n'
+            '{"prompt": "Sum of angles in triangle?", "answer_a": "180", "answer_b": "180 degrees", "agreement": true}\n'
+            '{"prompt": "Tallest mountain?", "answer_a": "Everest", "answer_b": "K2", "agreement": false}\n'
+            '{"prompt": "Currency of Japan?", "answer_a": "Yen", "answer_b": "Japanese Yen", "agreement": true}\n'
+            '{"prompt": "First president of USA?", "answer_a": "Washington", "answer_b": "George Washington", "agreement": true}\n'
+            '{"prompt": "HTTP status for OK?", "answer_a": "200", "answer_b": "200", "agreement": true}\n'
+            '{"prompt": "Atomic number of H?", "answer_a": "1", "answer_b": "1", "agreement": true}\n'
+            '{"prompt": "Author of Hamlet?", "answer_a": "Shakespeare", "answer_b": "William Shakespeare", "agreement": true}\n'
+            '{"prompt": "Sides of a hexagon?", "answer_a": "6", "answer_b": "6", "agreement": true}\n'
+        ),
+        "README.md": (
+            "# llm-judge template\n\n"
+            "Asserts your LLM-judge agrees with the reference at least\n"
+            "75% of the time across pairwise prompts.\n\n"
+            "**Files:** `spec.yaml`, `metric.py` (counts the\n"
+            "`agreement` field), `data.jsonl` (20 prompts; 16 marked\n"
+            "agreement=true → 0.80).\n\n"
+            "**To plug in a real LLM judge:** rewrite `metric.py` to\n"
+            "send each `(prompt, answer_a, answer_b)` triple to your\n"
+            "judge model and recompute `agreement` at evaluation time.\n"
+            "Then `lock --force`. See [TUTORIAL.md](../../TUTORIAL.md).\n"
+        ),
+    },
+    "ab": {
+        "spec.yaml": (
+            'claim: "Variant B has at least a 5 percentage-point absolute lift over A."\n'
+            "falsification:\n"
+            "  failure_criteria:\n"
+            "    - metric: ab_lift\n"
+            "      direction: above\n"
+            "      threshold: 0.05\n"
+            "  minimum_sample_size: 20\n"
+            '  stopping_rule: "fixed-n"\n'
+            "experiment:\n"
+            '  command: "echo ready"\n'
+            '  dataset: "data.csv"\n'
+            '  metric_fn: "__MODULE_PATH__.metric:ab_lift"\n'
+        ),
+        "metric.py": (
+            '"""A/B test lift: conversion(B) - conversion(A)."""\n'
+            "import csv\n"
+            "from pathlib import Path\n\n"
+            "def ab_lift(_run_dir):\n"
+            '    path = Path(__file__).parent / "data.csv"\n'
+            "    rows = list(csv.DictReader(path.open()))\n"
+            "    if not rows:\n"
+            "        return 0.0, 0\n"
+            '    a = [r for r in rows if r["variant"] == "a"]\n'
+            '    b = [r for r in rows if r["variant"] == "b"]\n'
+            "    if not a or not b:\n"
+            "        return 0.0, len(rows)\n"
+            '    rate_a = sum(int(r["converted"]) for r in a) / len(a)\n'
+            '    rate_b = sum(int(r["converted"]) for r in b) / len(b)\n'
+            "    return rate_b - rate_a, len(rows)\n"
+        ),
+        "data.csv": (
+            "user_id,variant,converted\n"
+            "u01,a,0\nu02,a,1\nu03,a,0\nu04,a,1\nu05,a,0\n"
+            "u06,a,0\nu07,a,0\nu08,a,0\nu09,a,0\nu10,a,0\n"
+            "u11,b,0\nu12,b,1\nu13,b,1\nu14,b,0\nu15,b,1\n"
+            "u16,b,0\nu17,b,0\nu18,b,0\nu19,b,0\nu20,b,0\n"
+        ),
+        "README.md": (
+            "# ab template\n\n"
+            "Asserts that variant B's conversion rate exceeds variant\n"
+            "A's by at least 5 percentage points (absolute lift).\n\n"
+            "**Files:** `spec.yaml` (threshold 0.05, direction above),\n"
+            "`metric.py` (lift = rate_b - rate_a), `data.csv` (20 rows,\n"
+            "10 per variant; A=0.20, B=0.30 → lift 0.10).\n\n"
+            "**Modify:** swap in your real experiment's per-user\n"
+            "conversions; the column names (`variant`, `converted`)\n"
+            "are what the metric reads. `lock --force` after edits.\n"
+            "See [TUTORIAL.md](../../TUTORIAL.md).\n"
+        ),
+    },
+}
+
+
+def _cmd_init_template(args: argparse.Namespace) -> int:
+    template_name = args.template
+    if template_name not in _INIT_TEMPLATES:
+        avail = ", ".join(sorted(_INIT_TEMPLATES))
+        print(
+            f"falsify init: unknown template {template_name!r}; "
+            f"available: {avail}",
+            file=sys.stderr,
+        )
+        return EXIT_BAD_SPEC
+
+    # Default to a Python-import-safe name (snake_case) when the
+    # template flag uses kebab-case (e.g. --template llm-judge).
+    default_name = template_name.replace("-", "_")
+    name = args.claim_name or args.name or default_name
+    target_dir = Path(args.dir) if args.dir else Path("claims") / name
+    files = _INIT_TEMPLATES[template_name]
+
+    if target_dir.exists():
+        existing = [
+            f for f in files
+            if (target_dir / f).exists()
+        ]
+        if existing and not args.force:
+            print(
+                f"falsify init: files exist; use --force to overwrite: "
+                f"{', '.join(existing)} in {target_dir}",
+                file=sys.stderr,
+            )
+            return EXIT_BAD_SPEC
+
+    module_path = (
+        str(target_dir).replace("\\", "/").replace("/", ".").strip(".")
+    )
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+    for filename, content in files.items():
+        rendered = (
+            content
+            .replace("__MODULE_PATH__", module_path)
+            .replace("__NAME__", name)
+        )
+        (target_dir / filename).write_text(rendered)
+
+    falsify_dir = FALSIFY_DIR / name
+    falsify_dir.mkdir(parents=True, exist_ok=True)
+    (falsify_dir / "spec.yaml").write_text(
+        (target_dir / "spec.yaml").read_text()
+    )
+
+    print(f"Scaffolded `{template_name}` template at {target_dir}/")
+    print(f"  spec mirrored to .falsify/{name}/spec.yaml")
+    print()
+    print("Next steps:")
+    print(f"  python3 falsify.py lock {name}")
+    print(f"  python3 falsify.py run {name}")
+    print(f"  python3 falsify.py verdict {name}")
+    return EXIT_PASS
+
+
 def cmd_init(args: argparse.Namespace) -> int:
-    target_dir = FALSIFY_DIR / args.name
+    if args.template:
+        return _cmd_init_template(args)
+
+    name = args.name or args.claim_name
+    if not name:
+        print(
+            "falsify init: claim name required (positional or --name) "
+            "unless --template is given",
+            file=sys.stderr,
+        )
+        return 1
+
+    target_dir = FALSIFY_DIR / name
     spec_path = target_dir / "spec.yaml"
 
     if target_dir.exists() and not args.force:
@@ -2540,12 +2876,32 @@ def build_parser() -> argparse.ArgumentParser:
     p_init = sub.add_parser("init", help="Scaffold a new claim spec")
     p_init.add_argument(
         "name",
-        help="Claim name (used as directory under .falsify/)",
+        nargs="?",
+        help="Claim name (used as directory under .falsify/). "
+             "Required unless --template is given.",
+    )
+    p_init.add_argument(
+        "--name",
+        dest="claim_name",
+        help="Override claim name when using --template "
+             "(default: template name).",
+    )
+    p_init.add_argument(
+        "--template",
+        help=(
+            "Scaffold a complete working claim from a template. "
+            "Available: " + ", ".join(sorted(_INIT_TEMPLATES))
+        ),
+    )
+    p_init.add_argument(
+        "--dir",
+        help="Target directory for template files "
+             "(default: claims/<name>/).",
     )
     p_init.add_argument(
         "--force",
         action="store_true",
-        help="Overwrite an existing claim directory",
+        help="Overwrite existing files / directories",
     )
     p_init.set_defaults(func=cmd_init)
 

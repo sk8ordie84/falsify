@@ -72,6 +72,13 @@ numbers follow [Semantic Versioning](https://semver.org).
   claims with text / json / shields.io / svg outputs. Powers
   README badges and CI gating; default exits `10` only on
   `fail` status, `--strict` also exits on `warn`.
+- `falsify init --template {accuracy,latency,brier,llm-judge,ab}`
+  — scaffolds a complete working claim (spec + metric + dataset
+  + claim-local README) into `claims/<name>/` and mirrors
+  `spec.yaml` into `.falsify/<name>/` so the canonical CLI flow
+  works without further setup. Flags: `--name`, `--dir`,
+  `--force`. Hyphenated template names default to a snake_case
+  claim name so the metric module is importable.
 - `Dockerfile` + `.dockerignore` — reproducible demo environment
   (`docker run --rm -it falsify-demo` fires the auto-demo).
 - `docs/DOCKER.md` — quick run, interactive session, repo-mount,

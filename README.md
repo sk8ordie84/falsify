@@ -115,6 +115,28 @@ below.
 
 New to pre-registration? Walk through [TUTORIAL.md](TUTORIAL.md) — 15 minutes, zero to first locked claim.
 
+### Start from a template
+
+```bash
+falsify init --template accuracy
+falsify lock accuracy
+falsify run accuracy
+falsify verdict accuracy
+```
+
+Five templates ship with a runnable spec + metric + dataset:
+
+- `accuracy` — classifier holdout accuracy ≥ 0.80
+- `latency` — p95 request latency ≤ 200 ms
+- `brier` — probabilistic calibration Brier ≤ 0.25
+- `llm-judge` — LLM-judge agreement rate ≥ 0.75
+- `ab` — A/B test absolute lift ≥ 0.05
+
+Each scaffolds into `claims/<name>/` (sources) and mirrors
+`spec.yaml` into `.falsify/<name>/` so the CLI runtime works
+without further setup. Override the default name with `--name`
+or the directory with `--dir`.
+
 ### Developer commands
 
 ```bash
