@@ -1,7 +1,7 @@
 # Falsification Engine
 
-> Pre-registration and CI for AI-agent claims. Lock the hypothesis
-> before the data. Get a deterministic PASS or FAIL — not a story.
+> **Git for AI honesty.** Lock the claim before the data — or it
+> didn't happen.
 
 <!-- ![CI](https://github.com/<user>/<repo>/actions/workflows/falsify.yml/badge.svg) ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg) -->
 

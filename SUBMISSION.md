@@ -9,44 +9,44 @@ Falsification Engine
 Pre-registration and CI for AI-agent claims — deterministic PASS or
 FAIL, not a story.
 
-## Short description
+## Short description (submission form)
 
-AI agents make empirical claims all day — *"accuracy is up,"* *"our
-filter is better,"* *"the reranker beats baseline"* — but rarely pin
-down the threshold, the metric, or the stopping rule before the data
-arrives. Every verdict becomes post-hoc rationalization: goalposts
-move, samples get chosen, winning explanations kept. Falsification
-Engine forces scientific discipline onto that loop. You declare the
-claim, lock the spec with a SHA-256 canonical-YAML hash, run the
-experiment, and read the exit code. PASS returns 0, FAIL returns
-10, a tampered spec returns 3, a guard violation returns 11 —
-mechanical, not rhetorical. Inside the repo: eight CLI subcommands
-(init, lock, run, verdict, guard, list, stats, diff), a commit-msg
-git hook that blocks commits whose messages contradict a locked
-verdict, and a GitHub Actions workflow that re-verdicts every push
-across Python 3.11 and 3.12. Opus 4.7 contributes three Claude Code
-skills (hypothesis-author, the falsify orchestrator, claim-audit)
-and two forked-context subagents (claim-auditor for semantic text
-cross-reference, verdict-refresher for autonomous stale-verdict
-maintenance). In an era of agent-generated research, falsifiability
-has to be enforced at commit time, not at peer-review time.
+**Your AI agent lied to you last Tuesday. You didn't catch it
+because you didn't lock the claim first.**
+
+Falsification Engine is git for AI honesty. Before you run the
+experiment, you declare the claim, the metric, and the threshold.
+A SHA-256 hash freezes the spec. Then you run, and the verdict is
+deterministic — PASS, FAIL, or hash mismatch if someone tampered.
+A commit-msg git hook blocks any commit whose message contradicts
+the locked verdict.
+
+Eight CLI subcommands, a CI workflow that re-verdicts every push,
+three Claude Code skills (hypothesis-author, falsify orchestrator,
+claim-audit), and two forked-context subagents (claim-auditor for
+semantic cross-reference, verdict-refresher for autonomous
+stale-verdict maintenance). Opus 4.7's long context handles the
+full repo plus verdict history as a single reasoning unit.
+
+In a world where agents generate research faster than humans can
+peer-review it, falsifiability has to be enforced at commit time,
+not at conference time. MIT licensed, stdlib + pyyaml,
+`pip install .` and go.
 
 ## How Opus 4.7 was used
 
-Three-layer usage. First, Claude Code with Opus 4.7 wrote every
-line in this repository — each commit carries a Co-Authored-By
-trailer for auditability. Second, three in-session skills
-orchestrate the claim-to-verdict workflow: hypothesis-author runs a
-five-question dialogue (claim, metric, dataset, threshold/direction,
-stopping rule) to draft a falsifiable spec.yaml; the falsify
-orchestrator routes any empirical claim to the right step in the
-init/lock/run/verdict pipeline; claim-audit scans pasted text for
-assertions and cross-references the verdict store. Third, two
-forked-context subagents exploit Opus 4.7's 1M-token window:
-claim-auditor performs paraphrase-aware semantic audit against
-every verdict.json; verdict-refresher reads `stats --json` and
-autonomously re-runs stale specs. The long context let us reason
-over the whole repo and verdict history as a single unit.
+Opus 4.7's 1M-token context is what made this shape of tool
+possible. Each forked-context subagent loads the full verdict
+store plus the input text as a single reasoning unit — no paging,
+no retrieval indirection. `claim-auditor` performs paraphrase-aware
+cross-reference of PR bodies and release notes against every
+`verdict.json`. `verdict-refresher` reads `falsify stats --json`
+and autonomously re-runs stale specs. On top, three in-session
+skills drive the human-facing workflow: `hypothesis-author` drafts
+a falsifiable spec through a five-question dialogue, the `falsify`
+skill routes any empirical claim to the right pipeline step, and
+`claim-audit` runs a fast regex pass before escalating to the
+subagent. Every commit carries a `Co-Authored-By: Claude` trailer.
 
 ## Repo link
 

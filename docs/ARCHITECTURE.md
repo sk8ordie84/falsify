@@ -1,5 +1,8 @@
 # Architecture — Falsification Engine
 
+> **Git for AI honesty.** Lock the claim before the data — or it
+> didn't happen.
+
 ## One-sentence summary
 
 A deterministic, hash-anchored claim verifier that turns

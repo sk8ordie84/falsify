@@ -59,6 +59,13 @@ class SubmissionTests(unittest.TestCase):
     def test_has_deadline(self) -> None:
         self.assertIn("April 26", self.text)
 
+    def test_has_git_for_ai_honesty_hook(self) -> None:
+        self.assertIn(
+            "git for AI honesty",
+            self.text,
+            "submission must lead with the 'git for AI honesty' hook",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
