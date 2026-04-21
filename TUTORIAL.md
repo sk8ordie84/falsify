@@ -152,6 +152,11 @@ Three commands to see what the system knows about your claim:
     falsify stats
     falsify export --output audit.jsonl
     falsify verify audit.jsonl
+    falsify replay <run-id>
+
+`replay` re-runs the metric against the same dataset and exits 0
+only if the value matches bit-for-bit; mismatch or stale spec are
+hard errors.
 
 `list` gives you a table of every claim and its state. `stats`
 aggregates counts (PASS/FAIL/INCONCLUSIVE/STALE/UNRUN). `export`

@@ -50,6 +50,12 @@ numbers follow [Semantic Versioning](https://semver.org).
 - `docs/PRE_COMMIT.md` — setup guide for both use cases.
 - `TUTORIAL.md` — 15-minute hands-on walkthrough from init to
   first locked PASS/FAIL cycle.
+- `falsify replay <run-id>` — deterministically re-runs a stored
+  run's metric and verifies the value matches exactly (tolerance
+  configurable via `--tolerance`). New exit code path: `10` on
+  mismatch, `3` on stale spec. `cmd_verdict` now also writes
+  `verdict.json` into the run dir as a per-run snapshot so
+  replay can target arbitrary historical runs.
 - `Dockerfile` + `.dockerignore` — reproducible demo environment
   (`docker run --rm -it falsify-demo` fires the auto-demo).
 - `docs/DOCKER.md` — quick run, interactive session, repo-mount,

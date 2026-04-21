@@ -573,6 +573,25 @@ def cmd_run(args: argparse.Namespace) -> int:
     return EXIT_PASS
 
 
+def _load_metric_fn(metric_fn_spec: str) -> Callable[..., Any]:
+    """Import and return the metric callable referenced by 'module:function'.
+
+    Inserts `cwd` into sys.path so user metric modules adjacent to the
+    working directory are importable. Raises ValueError if the spec
+    string is malformed; propagates ImportError / AttributeError.
+    """
+    if ":" not in metric_fn_spec:
+        raise ValueError(
+            f"metric_fn {metric_fn_spec!r} must be in 'module:function' form"
+        )
+    module_name, func_name = metric_fn_spec.split(":", 1)
+    cwd_str = str(Path.cwd())
+    if cwd_str not in sys.path:
+        sys.path.insert(0, cwd_str)
+    module = importlib.import_module(module_name)
+    return getattr(module, func_name)
+
+
 def _criterion_holds(value: float, direction: str, threshold: float) -> bool:
     if direction == "above":
         return value > threshold
@@ -581,6 +600,221 @@ def _criterion_holds(value: float, direction: str, threshold: float) -> bool:
     if direction == "equals":
         return abs(value - threshold) < _EQUALS_EPSILON
     raise ValueError(f"unknown direction: {direction!r}")
+
+
+def cmd_replay(args: argparse.Namespace) -> int:
+    run_id = args.run_id
+    tolerance = args.tolerance if args.tolerance is not None else 0.0
+    use_json = bool(getattr(args, "json", False))
+
+    # Locate the run directory: optionally narrowed by --claim.
+    matches: list[str] = []
+    if args.claim:
+        if (FALSIFY_DIR / args.claim / "runs" / run_id).is_dir():
+            matches.append(args.claim)
+    elif FALSIFY_DIR.exists():
+        for claim_dir in sorted(FALSIFY_DIR.iterdir()):
+            if not claim_dir.is_dir():
+                continue
+            if (claim_dir / "runs" / run_id).is_dir():
+                matches.append(claim_dir.name)
+
+    if not matches:
+        msg = f"run_id {run_id!r} not found under .falsify/*/runs/"
+        if use_json:
+            print(json.dumps(
+                {"status": "error", "run_id": run_id, "message": msg},
+                indent=2, sort_keys=True,
+            ))
+        else:
+            print(f"falsify replay: {msg}", file=sys.stderr)
+        return EXIT_BAD_SPEC
+    if len(matches) > 1:
+        msg = (
+            f"run_id {run_id!r} is ambiguous across claims "
+            f"{matches}; disambiguate with --claim"
+        )
+        if use_json:
+            print(json.dumps(
+                {"status": "error", "run_id": run_id, "message": msg},
+                indent=2, sort_keys=True,
+            ))
+        else:
+            print(f"falsify replay: {msg}", file=sys.stderr)
+        return EXIT_BAD_SPEC
+
+    claim = matches[0]
+    claim_dir = FALSIFY_DIR / claim
+    run_dir = claim_dir / "runs" / run_id
+
+    run_verdict_path = run_dir / "verdict.json"
+    if not run_verdict_path.exists():
+        msg = (
+            f"run {run_id} has no verdict snapshot — run "
+            f"`falsify verdict {claim}` against this run first"
+        )
+        if use_json:
+            print(json.dumps(
+                {"status": "error", "run_id": run_id, "claim": claim, "message": msg},
+                indent=2, sort_keys=True,
+            ))
+        else:
+            print(f"falsify replay: {msg}", file=sys.stderr)
+        return EXIT_BAD_SPEC
+
+    try:
+        stored = json.loads(run_verdict_path.read_text())
+        stored_lock = json.loads((run_dir / "spec.lock.json").read_text())
+    except (OSError, json.JSONDecodeError) as e:
+        if use_json:
+            print(json.dumps(
+                {"status": "error", "run_id": run_id, "claim": claim,
+                 "message": f"failed to read run artifacts: {e}"},
+                indent=2, sort_keys=True,
+            ))
+        else:
+            print(
+                f"falsify replay: failed to read run artifacts: {e}",
+                file=sys.stderr,
+            )
+        return EXIT_BAD_SPEC
+
+    stored_value = stored.get("observed_value")
+    stored_n = stored.get("sample_size")
+    stored_hash = stored_lock.get("spec_hash")
+
+    # Check that the current spec still matches the hash at run time.
+    spec_path = claim_dir / "spec.yaml"
+    if not spec_path.exists():
+        msg = f"{spec_path} not found"
+        if use_json:
+            print(json.dumps(
+                {"status": "error", "run_id": run_id, "claim": claim, "message": msg},
+                indent=2, sort_keys=True,
+            ))
+        else:
+            print(f"falsify replay: {msg}", file=sys.stderr)
+        return EXIT_BAD_SPEC
+    try:
+        current_spec = yaml.safe_load(spec_path.read_text())
+    except yaml.YAMLError as e:
+        if use_json:
+            print(json.dumps(
+                {"status": "error", "run_id": run_id, "claim": claim,
+                 "message": f"spec parse error: {e}"},
+                indent=2, sort_keys=True,
+            ))
+        else:
+            print(f"falsify replay: spec parse error: {e}", file=sys.stderr)
+        return EXIT_BAD_SPEC
+    current_hash = hashlib.sha256(
+        _canonicalize(current_spec).encode("utf-8")
+    ).hexdigest()
+
+    if stored_hash != current_hash:
+        msg = (
+            f"spec changed since run; replay invalid "
+            f"(stored {str(stored_hash)[:12]}, current {current_hash[:12]})"
+        )
+        if use_json:
+            print(json.dumps({
+                "status": "stale",
+                "claim": claim,
+                "run_id": run_id,
+                "stored_hash": stored_hash,
+                "current_hash": current_hash,
+                "message": msg,
+            }, indent=2, sort_keys=True))
+        else:
+            print(f"falsify replay: {msg}", file=sys.stderr)
+        return EXIT_HASH_MISMATCH
+
+    metric_fn_spec = current_spec["experiment"]["metric_fn"]
+    try:
+        fn = _load_metric_fn(metric_fn_spec)
+    except (ValueError, ImportError, AttributeError) as e:
+        msg = f"failed to load {metric_fn_spec}: {e}"
+        if use_json:
+            print(json.dumps(
+                {"status": "error", "run_id": run_id, "claim": claim, "message": msg},
+                indent=2, sort_keys=True,
+            ))
+        else:
+            print(f"falsify replay: {msg}", file=sys.stderr)
+        return EXIT_BAD_SPEC
+
+    try:
+        result = fn(run_dir)
+    except Exception as e:
+        msg = f"metric_fn raised {type(e).__name__}: {e}"
+        if use_json:
+            print(json.dumps(
+                {"status": "error", "run_id": run_id, "claim": claim, "message": msg},
+                indent=2, sort_keys=True,
+            ))
+        else:
+            print(f"falsify replay: {msg}", file=sys.stderr)
+        return EXIT_BAD_SPEC
+
+    if isinstance(result, tuple) and len(result) == 2:
+        replay_raw, replay_n = result
+    else:
+        replay_raw = result
+        replay_n = None
+    if not isinstance(replay_raw, (int, float)) or isinstance(replay_raw, bool):
+        msg = (
+            f"metric_fn must return a number or (number, int); got "
+            f"{type(replay_raw).__name__}"
+        )
+        if use_json:
+            print(json.dumps(
+                {"status": "error", "run_id": run_id, "claim": claim, "message": msg},
+                indent=2, sort_keys=True,
+            ))
+        else:
+            print(f"falsify replay: {msg}", file=sys.stderr)
+        return EXIT_BAD_SPEC
+    replay_value = float(replay_raw)
+
+    if not isinstance(stored_value, (int, float)) or isinstance(stored_value, bool):
+        msg = "stored observed_value is not a number — cannot compare"
+        if use_json:
+            print(json.dumps(
+                {"status": "error", "run_id": run_id, "claim": claim, "message": msg},
+                indent=2, sort_keys=True,
+            ))
+        else:
+            print(f"falsify replay: {msg}", file=sys.stderr)
+        return EXIT_BAD_SPEC
+
+    delta = abs(replay_value - float(stored_value))
+    value_match = delta <= tolerance
+    n_match = (replay_n == stored_n) if stored_n is not None else True
+    match = value_match and n_match
+
+    if use_json:
+        print(json.dumps({
+            "status": "ok" if match else "mismatch",
+            "claim": claim,
+            "run_id": run_id,
+            "stored": {"value": stored_value, "n": stored_n},
+            "replayed": {"value": replay_value, "n": replay_n},
+            "delta": delta,
+            "tolerance": tolerance,
+        }, indent=2, sort_keys=True))
+    else:
+        if match:
+            print(
+                f"REPLAY OK  claim={claim}  run={run_id}  "
+                f"value={replay_value}  n={replay_n}"
+            )
+        else:
+            print(
+                f"REPLAY MISMATCH  stored={stored_value}  "
+                f"replayed={replay_value}  delta={delta}"
+            )
+
+    return EXIT_PASS if match else EXIT_FAIL
 
 
 def cmd_verdict(args: argparse.Namespace) -> int:
@@ -611,23 +845,9 @@ def cmd_verdict(args: argparse.Namespace) -> int:
         return EXIT_BAD_SPEC
 
     metric_fn_spec = spec["experiment"]["metric_fn"]
-    if ":" not in metric_fn_spec:
-        print(
-            f"falsify verdict: metric_fn {metric_fn_spec!r} "
-            f"must be in 'module:function' form",
-            file=sys.stderr,
-        )
-        return EXIT_BAD_SPEC
-    module_name, func_name = metric_fn_spec.split(":", 1)
-
-    cwd_str = str(Path.cwd())
-    if cwd_str not in sys.path:
-        sys.path.insert(0, cwd_str)
-
     try:
-        module = importlib.import_module(module_name)
-        fn = getattr(module, func_name)
-    except (ImportError, AttributeError) as e:
+        fn = _load_metric_fn(metric_fn_spec)
+    except (ValueError, ImportError, AttributeError) as e:
         print(
             f"falsify verdict: failed to load {metric_fn_spec}: {e}",
             file=sys.stderr,
@@ -674,9 +894,11 @@ def cmd_verdict(args: argparse.Namespace) -> int:
             "run_ref": run_dir.name,
             "checked_at": datetime.now(timezone.utc).isoformat(),
         }
-        (claim_dir / "verdict.json").write_text(
+        inconclusive_json = (
             json.dumps(inconclusive, indent=2, sort_keys=True) + "\n"
         )
+        (claim_dir / "verdict.json").write_text(inconclusive_json)
+        (run_dir / "verdict.json").write_text(inconclusive_json)
         print(
             f"falsify verdict: minimum_sample_size not met "
             f"({sample_size} < {min_n})",
@@ -701,9 +923,9 @@ def cmd_verdict(args: argparse.Namespace) -> int:
     }
     if sample_size is not None:
         verdict_data["sample_size"] = sample_size
-    (claim_dir / "verdict.json").write_text(
-        json.dumps(verdict_data, indent=2, sort_keys=True) + "\n"
-    )
+    verdict_json = json.dumps(verdict_data, indent=2, sort_keys=True) + "\n"
+    (claim_dir / "verdict.json").write_text(verdict_json)
+    (run_dir / "verdict.json").write_text(verdict_json)
 
     print(f"Verdict: {verdict}")
     print(f"  observed {head['metric']} = {value}")
@@ -2190,6 +2412,31 @@ def build_parser() -> argparse.ArgumentParser:
         help="Canonical diff between two arbitrary YAML files",
     )
     p_diff.set_defaults(func=cmd_diff)
+
+    p_replay = sub.add_parser(
+        "replay",
+        help="Re-run a stored run's metric and assert the value matches",
+    )
+    p_replay.add_argument(
+        "run_id",
+        help="Run identifier (the timestamp directory under .falsify/<claim>/runs/)",
+    )
+    p_replay.add_argument(
+        "--claim",
+        help="Disambiguate when the same run_id appears under multiple claims",
+    )
+    p_replay.add_argument(
+        "--tolerance",
+        type=float,
+        default=0.0,
+        help="Absolute tolerance for float comparison (default 0.0 = exact match)",
+    )
+    p_replay.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit machine-readable JSON",
+    )
+    p_replay.set_defaults(func=cmd_replay)
 
     p_verdict = sub.add_parser("verdict", help="Report PASS/FAIL for a claim")
     p_verdict.add_argument("name", help="Claim name")

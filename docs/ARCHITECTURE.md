@@ -41,6 +41,10 @@ reproducible from what's on disk.
 - **Exit codes are the API.** `0` PASS, `10` FAIL, `2`
   INCONCLUSIVE / bad spec, `3` hash mismatch, `11` guard violation.
   Everything else the CLI prints is for humans.
+- **Replayability.** Every recorded run can be re-executed
+  deterministically via `falsify replay <run-id>`; divergence
+  between the stored metric value and the re-computed value is a
+  failure mode (exit 10), not a soft warning.
 
 ## Module layout
 
@@ -59,6 +63,7 @@ reproducible from what's on disk.
 | `falsify.py::cmd_version` | print version string (also as top-level `--version` flag)              |
 | `falsify.py::cmd_export`  | write verdict history as JSONL (audit trail, read-only)                |
 | `falsify.py::cmd_verify`  | audit a JSONL export for chain integrity and ordering                  |
+| `falsify.py::cmd_replay`  | re-run a stored run's metric and verify the value matches              |
 
 ## Why SHA-256 of canonical YAML (not of the raw file)
 

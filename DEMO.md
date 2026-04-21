@@ -162,6 +162,16 @@ contents produce byte-identical output. Share with a peer to
 reproduce your verdicts from nothing but this file plus the
 original `spec.yaml`.
 
+## Bonus — proving reproducibility
+
+```bash
+python3 falsify.py replay <run-id>
+```
+
+Runs the metric again against the same dataset. Exits 0 only if
+the number matches bit-for-bit (or within `--tolerance`) — the
+claim isn't just locked, it's reproducible.
+
 ## Bonus — verify a peer's audit trail
 
 ```bash
