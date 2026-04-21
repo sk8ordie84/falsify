@@ -1,0 +1,18 @@
+claim: "JUJU ledger predictions are better calibrated than chance (brier below 0.25)"
+
+falsification:
+  failure_criteria:
+    - metric: brier_score
+      direction: below
+      threshold: 0.25
+  minimum_sample_size: 20
+  stopping_rule: "fixed sample of the entire 20-row anonymized ledger"
+
+experiment:
+  command: "python3 examples/juju_sample/metric.py examples/juju_sample/data.csv"
+  dataset: "examples/juju_sample/data.csv"
+  metric_fn: "examples.juju_sample.metric:brier_score"
+
+environment:
+  python: "3.11"
+  packages: []
