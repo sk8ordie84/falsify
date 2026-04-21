@@ -108,6 +108,8 @@ without paging.
   just needs to thread multiple values through `metric_fn`.
 - Remote artifact storage (S3 or equivalent) for reproducible
   re-runs of expensive experiments across machines.
+- More claim types (see [docs/EXAMPLES.md](EXAMPLES.md) for
+  accuracy / latency / calibration / agreement / AB).
 
 ## What this is NOT
 

@@ -105,6 +105,9 @@ and a skill-lint pass over every SKILL.md and agent file.
 - Walk through the pipeline in 5 runnable steps: [DEMO.md](DEMO.md).
 - Second-by-second shooting script for the 3-minute video:
   [docs/DEMO_SHOT_LIST.md](docs/DEMO_SHOT_LIST.md).
+- Four more claim types (accuracy regression, latency gate,
+  prediction calibration, LLM agreement, AB test):
+  [docs/EXAMPLES.md](docs/EXAMPLES.md).
 
 ## Install the git hook
 
