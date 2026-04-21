@@ -1,4 +1,4 @@
-.PHONY: help install test smoke ci demo doctor clean lint-skills version
+.PHONY: help install test smoke ci demo demo-script doctor clean lint-skills version
 
 help:
 	@echo "Falsification Engine — common targets"
@@ -7,6 +7,7 @@ help:
 	@echo "  make smoke        — run smoke_test.sh"
 	@echo "  make ci           — run the same checks as GitHub Actions"
 	@echo "  make demo         — run the JUJU end-to-end demo"
+	@echo "  make demo-script  — run the auto-narrated ./demo.sh walkthrough"
 	@echo "  make doctor       — run falsify doctor"
 	@echo "  make lint-skills  — validate skill/agent frontmatter"
 	@echo "  make version      — print current falsify version"
@@ -27,6 +28,9 @@ demo:
 	python3 falsify.py lock juju
 	python3 falsify.py run juju
 	python3 falsify.py verdict juju
+
+demo-script:
+	./demo.sh
 
 doctor:
 	python3 falsify.py doctor

@@ -39,6 +39,8 @@ not rhetorical — and CI enforces it on every push.
 ## Quickstart
 
 ```bash
+./demo.sh   # auto-narrated: PASS → tamper → FAIL → guard block
+
 pip install pyyaml
 python3 falsify.py init my_claim
 # edit .falsify/my_claim/spec.yaml to fill in the template

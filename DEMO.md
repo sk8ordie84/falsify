@@ -1,5 +1,12 @@
 # Falsification Engine — 3-Minute Demo
 
+## Hands-off option
+
+Run `./demo.sh` for an auto-narrated walkthrough that runs the full
+PASS → tamper → FAIL → guard-block story end-to-end and restores the
+fixture when it's done. Everything below is the manual version if
+you want to pace the demo yourself.
+
 ## What you'll see
 
 Pre-registration + CI for AI-agent claims: lock a hypothesis, run the
