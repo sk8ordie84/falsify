@@ -1,0 +1,128 @@
+# Falsification Engine — hypothesis spec schema
+#
+# This file is the source of truth for what a valid claim spec looks like.
+# The CLI validates user specs against it before `lock` and before `run`.
+#
+# Format is JSON-Schema-flavoured but intentionally minimal — the only
+# runtime dependency is pyyaml, and `falsify.py` walks this structure by
+# hand. Keep it readable.
+
+schema_version: 1
+
+type: object
+required:
+  - claim
+  - falsification
+  - experiment
+
+properties:
+
+  claim:
+    type: string
+    required: true
+    description: >
+      One-sentence hypothesis that can, in principle, be proven wrong.
+      Must be a concrete, falsifiable statement — not a vibe.
+
+  falsification:
+    type: object
+    required: true
+    description: >
+      The conditions under which the claim is considered falsified.
+    properties:
+      failure_criteria:
+        type: array
+        required: true
+        min_items: 1
+        description: >
+          One or more conditions. If ANY criterion triggers on a run,
+          the claim is FAIL.
+        items:
+          type: object
+          required: [metric, direction, threshold]
+          properties:
+            metric:
+              type: string
+              description: >
+                Name of the metric. Must be a key returned by the
+                experiment's metric_fn.
+            direction:
+              type: string
+              enum: [above, below, equal, not_equal, at_least, at_most]
+              description: >
+                Comparison direction. "above 0.05" means the claim is
+                falsified when the metric exceeds 0.05.
+            threshold:
+              type: number
+              description: Numeric threshold the metric is compared to.
+      minimum_sample_size:
+        type: integer
+        required: true
+        minimum: 1
+        description: >
+          Minimum n before a verdict is considered valid. Runs with
+          fewer samples return an indeterminate verdict, not PASS.
+      stopping_rule:
+        type: string
+        required: true
+        description: >
+          When to stop collecting evidence — e.g. "after 1000 samples"
+          or "after 1 epoch over the eval set". Locked at pre-registration
+          time to prevent optional stopping.
+
+  experiment:
+    type: object
+    required: true
+    description: The reproducible procedure that generates evidence.
+    properties:
+      command:
+        type: string
+        required: true
+        description: Shell command that runs the experiment.
+      dataset:
+        type: string
+        required: false
+        description: Path or identifier of the dataset under test.
+      metric_fn:
+        type: string
+        required: true
+        pattern: "^[A-Za-z_][\\w.]*:[A-Za-z_]\\w*$"
+        description: >
+          Dotted import path and function, separated by a colon.
+          Example: "my_pkg.metrics:accuracy". The function must return
+          a dict keyed by metric name.
+
+  environment:
+    type: object
+    required: false
+    description: Environment pins used to reproduce the run.
+    properties:
+      python:
+        type: string
+        description: Python version spec, e.g. "3.11" or ">=3.11,<3.13".
+      packages:
+        type: array
+        items:
+          type: string
+          description: PEP-508 requirement string, e.g. "numpy==2.0.0".
+
+  artifacts:
+    type: object
+    required: false
+    description: Files the experiment is expected to produce.
+    properties:
+      outputs:
+        type: array
+        items:
+          type: string
+          description: Path (glob allowed) of an expected output artifact.
+
+# Any string field whose value contains one of these markers is treated as
+# a placeholder. Specs with placeholders cannot be locked — the CLI exits
+# with code 2 (bad spec).
+placeholder_markers:
+  - "<"           # angle-bracket stubs like "<metric name>"
+  - "TODO"
+  - "FIXME"
+  - "REPLACE_ME"
+  - "XXX"

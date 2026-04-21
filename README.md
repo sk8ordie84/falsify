@@ -55,6 +55,29 @@ python falsify.py --help
 | `2`  | Bad spec — the claim file is malformed                     |
 | `3`  | Hash mismatch — the locked claim was tampered with         |
 
+## Validation
+
+Claim specs are validated against [`hypothesis.schema.yaml`](hypothesis.schema.yaml)
+before they can be locked or run.
+
+**Required fields** (exit `2` if missing or the wrong type):
+
+- `claim` — a string
+- `falsification.failure_criteria` — at least one `{metric, direction, threshold}` entry
+- `falsification.minimum_sample_size` — positive integer
+- `falsification.stopping_rule` — string
+- `experiment.command` — string
+- `experiment.metric_fn` — string in `module:function` form
+
+`environment` and `artifacts` are optional. `experiment.dataset` is
+optional but recommended.
+
+**Placeholder guard.** `falsify lock` refuses to lock a spec whose string
+fields still contain placeholder markers: `<...>`, `TODO`, `FIXME`,
+`REPLACE_ME`, `XXX`. This prevents the `examples/template.yaml` scaffold
+from being locked by accident. The CLI exits `2` (bad spec) until the
+placeholders are replaced with real values.
+
 ## Layout
 
 ```
