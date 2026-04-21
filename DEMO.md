@@ -109,6 +109,17 @@ ln -sf "$(pwd)/hooks/commit-msg" .git/hooks/commit-msg
 Now a commit message that asserts a falsified claim is rejected
 before it enters history — the same mechanism CI uses on every push.
 
+## Bonus — see all verdicts at once
+
+```bash
+python3 falsify.py stats
+python3 falsify.py stats --json
+```
+
+One-shot dashboard across every locked spec in `.falsify/` — name,
+state, metric, observed value, threshold, sample size, age in days.
+Aggregate counts on the last line. The JSON form is CI-friendly.
+
 ---
 
 ## See also

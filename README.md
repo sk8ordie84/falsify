@@ -46,6 +46,7 @@ python falsify.py --help
 | `run <name>`             | Execute the experiment; write run artifacts under `runs/`    |
 | `verdict <name>`         | Apply `failure_criteria`; report PASS/FAIL, write verdict    |
 | `list [--json]`          | Table of every claim's lock/run/verdict state (or JSON)      |
+| `stats [--json] [--name]`| Aggregate dashboard with counts across all specs             |
 | `guard`                  | Scan mode — non-zero if any claim is FAIL or STALE           |
 | `guard "<text>"`         | Text mode — block affirmative claims vs non-PASS verdicts    |
 | `guard -- <cmd> [args]`  | Wrap mode — run `<cmd>`; on success, fall through to scan    |

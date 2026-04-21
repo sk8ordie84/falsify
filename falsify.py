@@ -764,6 +764,133 @@ def _gather_claims(base: Path) -> list[dict]:
     return claims
 
 
+_STATS_STALE_DAYS = 7
+
+
+def _read_metric_name_from_spec(claim_dir: Path) -> str | None:
+    try:
+        spec = yaml.safe_load((claim_dir / "spec.yaml").read_text())
+    except (yaml.YAMLError, OSError):
+        return None
+    if not isinstance(spec, dict):
+        return None
+    criteria = spec.get("falsification", {}).get("failure_criteria") or []
+    if criteria and isinstance(criteria[0], dict):
+        m = criteria[0].get("metric")
+        if isinstance(m, str):
+            return m
+    return None
+
+
+def _gather_stats_rows(base: Path, name_filter: str | None) -> list[dict]:
+    now = datetime.now(timezone.utc)
+    rows: list[dict] = []
+    for claim_dir in _iter_claim_dirs(base):
+        if name_filter and name_filter not in claim_dir.name:
+            continue
+
+        state, verdict_data = _derive_claim_state(claim_dir)
+
+        metric: str | None = None
+        value: float | None = None
+        threshold: float | None = None
+        n: int | None = None
+        last_run_iso: str | None = None
+        age_days: int | None = None
+
+        if isinstance(verdict_data, dict):
+            v_metric = verdict_data.get("metric")
+            if isinstance(v_metric, str):
+                metric = v_metric
+            v_value = verdict_data.get("observed_value")
+            if isinstance(v_value, (int, float)) and not isinstance(v_value, bool):
+                value = float(v_value)
+            v_threshold = verdict_data.get("threshold")
+            if isinstance(v_threshold, (int, float)) and not isinstance(
+                v_threshold, bool
+            ):
+                threshold = float(v_threshold)
+            v_n = verdict_data.get("sample_size")
+            if isinstance(v_n, int) and not isinstance(v_n, bool):
+                n = v_n
+            checked_at = verdict_data.get("checked_at")
+            if isinstance(checked_at, str):
+                last_run_iso = checked_at
+                try:
+                    t = datetime.fromisoformat(checked_at)
+                    age_days = (now - t).days
+                except ValueError:
+                    pass
+
+        if metric is None:
+            metric = _read_metric_name_from_spec(claim_dir)
+
+        if (
+            state in ("PASS", "FAIL", "INCONCLUSIVE")
+            and age_days is not None
+            and age_days > _STATS_STALE_DAYS
+        ):
+            state = "STALE"
+
+        rows.append({
+            "name": claim_dir.name,
+            "state": state,
+            "metric": metric,
+            "value": value,
+            "threshold": threshold,
+            "n": n,
+            "last_run_iso": last_run_iso,
+            "age_days": age_days,
+        })
+    return rows
+
+
+def cmd_stats(args: argparse.Namespace) -> int:
+    rows = _gather_stats_rows(FALSIFY_DIR, args.name)
+
+    if args.json:
+        print(json.dumps(rows, indent=2, sort_keys=True))
+        return EXIT_PASS
+
+    counts = {"PASS": 0, "FAIL": 0, "INCONCLUSIVE": 0, "STALE": 0, "UNRUN": 0}
+    for r in rows:
+        s = r["state"]
+        if s in counts:
+            counts[s] += 1
+        else:
+            counts["UNRUN"] += 1
+
+    if rows:
+        headers = ["NAME", "STATE", "METRIC", "VALUE", "THRESHOLD", "N", "AGE(d)"]
+        table: list[list[str]] = [headers]
+        for r in rows:
+            table.append([
+                r["name"],
+                r["state"],
+                r["metric"] or "-",
+                f"{r['value']}" if r["value"] is not None else "-",
+                f"{r['threshold']}" if r["threshold"] is not None else "-",
+                f"{r['n']}" if r["n"] is not None else "-",
+                f"{r['age_days']}" if r["age_days"] is not None else "-",
+            ])
+        widths = [max(len(row[i]) for row in table) for i in range(len(headers))]
+        for row in table:
+            print(
+                "  ".join(cell.ljust(w) for cell, w in zip(row, widths)).rstrip()
+            )
+        print()
+
+    print(
+        f"{len(rows)} specs: "
+        f"{counts['PASS']} PASS, "
+        f"{counts['FAIL']} FAIL, "
+        f"{counts['INCONCLUSIVE']} INCONCLUSIVE, "
+        f"{counts['STALE']} STALE, "
+        f"{counts['UNRUN']} UNRUN"
+    )
+    return EXIT_PASS
+
+
 def cmd_list(args: argparse.Namespace) -> int:
     claims = _gather_claims(FALSIFY_DIR)
 
@@ -854,6 +981,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="Emit machine-readable JSON instead of a table",
     )
     p_list.set_defaults(func=cmd_list)
+
+    p_stats = sub.add_parser(
+        "stats",
+        help="Aggregate dashboard across all locked verdicts (informational)",
+    )
+    p_stats.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit machine-readable JSON",
+    )
+    p_stats.add_argument(
+        "--name",
+        help="Filter to claim names containing this substring",
+    )
+    p_stats.set_defaults(func=cmd_stats)
 
     return parser
 
