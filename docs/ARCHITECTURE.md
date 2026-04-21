@@ -137,3 +137,5 @@ without paging.
 5. **Every verdict is auditable from a single
    `.falsify/<name>/` directory.** A future reviewer with just that
    directory and the CLI can reproduce the PASS/FAIL decision.
+6. **Installable as a package** (`pip install .`) with a `falsify`
+   console entry point, not just a script.

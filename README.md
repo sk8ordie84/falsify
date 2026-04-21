@@ -36,18 +36,29 @@ not rhetorical — and CI enforces it on every push.
   that draft specs, audit arbitrary text against the verdict log,
   and keep the log itself fresh.
 
+## Install
+
+```bash
+pip install -e .
+```
+
+After install, `falsify` is available as a command on your `PATH`
+— no `python3 falsify.py` prefix needed. The `-e` editable form is
+handy during development; drop the flag for a regular install.
+
 ## Quickstart
 
 ```bash
 ./demo.sh   # auto-narrated: PASS → tamper → FAIL → guard block
 
-pip install pyyaml
-python3 falsify.py init my_claim
+# Either form works — `falsify` is the installed entry point,
+# `python3 falsify.py` is the uninstalled fallback.
+falsify init my_claim
 # edit .falsify/my_claim/spec.yaml to fill in the template
-python3 falsify.py lock my_claim
-python3 falsify.py run my_claim
-python3 falsify.py verdict my_claim
-python3 falsify.py hook install      # enable the commit-msg guard
+falsify lock my_claim
+falsify run my_claim
+falsify verdict my_claim
+falsify hook install      # enable the commit-msg guard
 ```
 
 Exit code `0` on PASS, `10` on FAIL. Everything else is documented

@@ -6,6 +6,13 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+### Added
+
+- `pyproject.toml` — installable as `pip install .` with a
+  `falsify` console entry point (`falsify:main`).
+
+### Notes
+
 Next: MCP verdict-log server, Managed Agents integration for cloud
 verdict refresh, multi-metric specs.
 

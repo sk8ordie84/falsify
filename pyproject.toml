@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "falsify"
+version = "0.1.0"
+description = "Pre-registration and CI for AI-agent claims — deterministic PASS or FAIL."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Cüneyt Öztürk" }]
+requires-python = ">=3.11"
+dependencies = [
+    "pyyaml>=6.0",
+]
+keywords = ["falsifiability", "pre-registration", "AI", "CI", "claude", "hackathon"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.urls]
+Homepage = "https://github.com/<USER>/falsify-hackathon"
+Repository = "https://github.com/<USER>/falsify-hackathon"
+Issues = "https://github.com/<USER>/falsify-hackathon/issues"
+Changelog = "https://github.com/<USER>/falsify-hackathon/blob/main/CHANGELOG.md"
+
+[project.scripts]
+falsify = "falsify:main"
+
+[tool.setuptools]
+py-modules = ["falsify"]

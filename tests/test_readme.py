@@ -23,8 +23,13 @@ class ReadmeTests(unittest.TestCase):
         self.assertIn("Guard violation", self.text)
 
     def test_has_quickstart(self) -> None:
-        self.assertIn("falsify.py init", self.text)
-        self.assertIn("falsify.py verdict", self.text)
+        # Either form is acceptable: `falsify <cmd>` (post-install
+        # console entry point) or `falsify.py <cmd>` (run-as-script).
+        for cmd in ("init", "verdict"):
+            self.assertTrue(
+                f"falsify {cmd}" in self.text or f"falsify.py {cmd}" in self.text,
+                f"Quickstart missing `falsify {cmd}` / `falsify.py {cmd}`",
+            )
 
     def test_mentions_all_three_skills(self) -> None:
         for skill in ("hypothesis-author", "falsify", "claim-audit"):
