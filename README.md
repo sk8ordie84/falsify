@@ -78,6 +78,28 @@ fields still contain placeholder markers: `<...>`, `TODO`, `FIXME`,
 from being locked by accident. The CLI exits `2` (bad spec) until the
 placeholders are replaced with real values.
 
+## Git hook (commit-msg guard)
+
+Block commits whose message affirmatively references a hypothesis that
+has not actually passed. `hooks/commit-msg` invokes
+`falsify guard "$commit_message"`; if the message contains an
+affirmative keyword (*confirmed*, *proven*, *validated*, *works*,
+*successful*) and fuzzy-matches a claim whose latest verdict is FAIL or
+INCONCLUSIVE, the commit is rejected with exit 11.
+
+Install as a symlink (preferred — updates flow through automatically):
+
+```bash
+ln -sf "$(pwd)/hooks/commit-msg" .git/hooks/commit-msg
+```
+
+Or copy it, for environments without symlinks:
+
+```bash
+cp hooks/commit-msg .git/hooks/commit-msg
+chmod +x .git/hooks/commit-msg
+```
+
 ## Layout
 
 ```

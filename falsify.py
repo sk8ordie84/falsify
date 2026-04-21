@@ -10,6 +10,7 @@ import json
 import platform
 import re
 import socket
+import string
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -31,6 +32,16 @@ FALSIFY_DIR = Path(".falsify")
 _FALLBACK_PLACEHOLDER_MARKERS = ("<", "TODO", "FIXME", "REPLACE_ME", "XXX")
 _RUN_TIMEOUT_S = 300
 _EQUALS_EPSILON = 1e-9
+
+_AFFIRMATIVE_KEYWORDS = (
+    "confirmed",
+    "proven",
+    "validated",
+    "works",
+    "successful",
+)
+
+EXIT_GUARD_VIOLATION = 11
 
 _TYPE_CHECKERS: dict[str, Callable[[Any], bool]] = {
     "string": lambda v: isinstance(v, str),
@@ -496,7 +507,25 @@ def cmd_verdict(args: argparse.Namespace) -> int:
     value = float(value_raw)
 
     min_n = spec["falsification"]["minimum_sample_size"]
+    criteria = spec["falsification"]["failure_criteria"]
+    head = criteria[0]
+
     if sample_size is not None and sample_size < min_n:
+        inconclusive = {
+            "verdict": "INCONCLUSIVE",
+            "reason": "minimum_sample_size_not_met",
+            "observed_value": value,
+            "sample_size": sample_size,
+            "minimum_sample_size": min_n,
+            "metric": head["metric"],
+            "direction": head["direction"],
+            "threshold": head["threshold"],
+            "run_ref": run_dir.name,
+            "checked_at": datetime.now(timezone.utc).isoformat(),
+        }
+        (claim_dir / "verdict.json").write_text(
+            json.dumps(inconclusive, indent=2, sort_keys=True) + "\n"
+        )
         print(
             f"falsify verdict: minimum_sample_size not met "
             f"({sample_size} < {min_n})",
@@ -504,13 +533,11 @@ def cmd_verdict(args: argparse.Namespace) -> int:
         )
         return EXIT_BAD_SPEC
 
-    criteria = spec["falsification"]["failure_criteria"]
     all_hold = True
     for c in criteria:
         if not _criterion_holds(value, c["direction"], c["threshold"]):
             all_hold = False
 
-    head = criteria[0]
     verdict = "PASS" if all_hold else "FAIL"
     verdict_data = {
         "verdict": verdict,
@@ -533,8 +560,157 @@ def cmd_verdict(args: argparse.Namespace) -> int:
     return EXIT_PASS if all_hold else EXIT_FAIL
 
 
+def _normalize_text(s: str) -> str:
+    s = s.lower()
+    s = s.translate(str.maketrans("", "", string.punctuation))
+    return " ".join(s.split())
+
+
+def _claim_text_matches(claim_norm: str, input_norm: str) -> bool:
+    if not claim_norm or not input_norm:
+        return False
+    if claim_norm in input_norm or input_norm in claim_norm:
+        return True
+    claim_tokens = {w for w in claim_norm.split() if len(w) >= 5}
+    input_tokens = {w for w in input_norm.split() if len(w) >= 5}
+    return len(claim_tokens & input_tokens) >= 2
+
+
+def _derive_claim_state(claim_dir: Path) -> tuple[str, dict | None]:
+    """Return (state, verdict_data_or_None).
+
+    States: PASS | FAIL | INCONCLUSIVE | STALE | UNRUN | UNLOCKED | UNKNOWN.
+    """
+    spec_path = claim_dir / "spec.yaml"
+    lock_path = claim_dir / "spec.lock.json"
+    verdict_path = claim_dir / "verdict.json"
+
+    if not spec_path.exists():
+        return "UNKNOWN", None
+    if not lock_path.exists():
+        return "UNLOCKED", None
+
+    try:
+        spec = yaml.safe_load(spec_path.read_text())
+        current_hash = hashlib.sha256(
+            _canonicalize(spec).encode("utf-8")
+        ).hexdigest()
+        lock_data = json.loads(lock_path.read_text())
+    except (yaml.YAMLError, json.JSONDecodeError, OSError):
+        return "UNKNOWN", None
+
+    if lock_data.get("spec_hash") != current_hash:
+        return "STALE", None
+
+    if not verdict_path.exists():
+        return "UNRUN", None
+
+    try:
+        verdict_data = json.loads(verdict_path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return "UNKNOWN", None
+
+    if not isinstance(verdict_data, dict):
+        return "UNKNOWN", None
+
+    v = verdict_data.get("verdict")
+    if v in ("PASS", "FAIL", "INCONCLUSIVE"):
+        return v, verdict_data
+    return "UNKNOWN", verdict_data
+
+
+def _read_claim_text(claim_dir: Path) -> str | None:
+    spec_path = claim_dir / "spec.yaml"
+    try:
+        spec = yaml.safe_load(spec_path.read_text())
+    except (yaml.YAMLError, OSError):
+        return None
+    if isinstance(spec, dict):
+        claim = spec.get("claim")
+        if isinstance(claim, str):
+            return claim
+    return None
+
+
+def _iter_claim_dirs(base: Path):
+    if not base.exists():
+        return
+    for claim_dir in sorted(base.iterdir()):
+        if not claim_dir.is_dir():
+            continue
+        if not (claim_dir / "spec.yaml").exists():
+            continue
+        yield claim_dir
+
+
+def _guard_text_mode(input_text: str) -> int:
+    input_norm = _normalize_text(input_text)
+    input_tokens = set(input_norm.split())
+    if not any(kw in input_tokens for kw in _AFFIRMATIVE_KEYWORDS):
+        return EXIT_PASS
+
+    violations: list[tuple[str, str, str]] = []
+    for claim_dir in _iter_claim_dirs(FALSIFY_DIR):
+        state, _ = _derive_claim_state(claim_dir)
+        if state == "PASS":
+            continue
+        if state not in ("FAIL", "INCONCLUSIVE"):
+            continue
+        claim_text = _read_claim_text(claim_dir)
+        if claim_text is None:
+            continue
+        if _claim_text_matches(_normalize_text(claim_text), input_norm):
+            reason = state
+            if state == "INCONCLUSIVE":
+                reason = "INCONCLUSIVE (not yet proven)"
+            violations.append((claim_dir.name, reason, claim_text))
+
+    if not violations:
+        return EXIT_PASS
+
+    print("BLOCKED: claim contradicts logged verdict(s):", file=sys.stderr)
+    for name, reason, claim_text in violations:
+        print(f"  - {name}: {reason} — {claim_text}", file=sys.stderr)
+    return EXIT_GUARD_VIOLATION
+
+
+def _guard_scan_mode() -> int:
+    problems: list[tuple[str, str]] = []
+    for claim_dir in _iter_claim_dirs(FALSIFY_DIR):
+        state, _ = _derive_claim_state(claim_dir)
+        if state in ("FAIL", "STALE"):
+            problems.append((claim_dir.name, state))
+
+    if not problems:
+        return EXIT_PASS
+
+    print("falsify guard: logged issues:", file=sys.stderr)
+    for name, state in problems:
+        print(f"  - {name}: {state}", file=sys.stderr)
+    return EXIT_FAIL
+
+
+def _guard_wrap_mode(cmd_tokens: list[str]) -> int:
+    if not cmd_tokens:
+        print("falsify guard: no command to wrap after `--`", file=sys.stderr)
+        return 1
+    try:
+        result = subprocess.run(cmd_tokens)
+    except FileNotFoundError as e:
+        print(f"falsify guard: {e}", file=sys.stderr)
+        return 127
+    if result.returncode != 0:
+        return result.returncode
+    return _guard_scan_mode()
+
+
 def cmd_guard(args: argparse.Namespace) -> int:
-    return _stub("guard")
+    tokens: list[str] = list(args.rest)
+    if tokens and tokens[0] == "--":
+        return _guard_wrap_mode(tokens[1:])
+    if tokens:
+        return _guard_text_mode(" ".join(tokens))
+    return _guard_scan_mode()
 
 
 def _gather_claims(base: Path) -> list[dict]:
@@ -655,12 +831,19 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_guard = sub.add_parser(
         "guard",
-        help="CI wrapper — exit non-zero when any locked claim is falsified",
+        help="CI wrapper — text-match, scan, or wrap modes",
+        description=(
+            "Three modes:\n"
+            "  falsify guard              scan for FAIL/STALE claims (exit 10 on hit)\n"
+            "  falsify guard \"text\"       block affirmative claims vs logged FAIL/INCONCLUSIVE (exit 11)\n"
+            "  falsify guard -- <cmd>    run <cmd>; on success, also scan"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p_guard.add_argument(
-        "cmd",
+        "rest",
         nargs=argparse.REMAINDER,
-        help="Command to wrap (everything after -- is passed through)",
+        help="Claim text, or `-- cmd args...` for wrap mode",
     )
     p_guard.set_defaults(func=cmd_guard)
 

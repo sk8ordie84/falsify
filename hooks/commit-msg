@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# commit-msg hook — text guard against logged verdicts.
+#
+# Invokes `falsify guard <commit-message>` which blocks the commit
+# (exit 11) when the message affirmatively references a claim whose
+# latest verdict is FAIL or INCONCLUSIVE.
+
+set -eu
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+FALSIFY="${REPO_ROOT}/falsify.py"
+
+if [ -x "${REPO_ROOT}/.venv/bin/python" ]; then
+    PY="${REPO_ROOT}/.venv/bin/python"
+else
+    PY="python3"
+fi
+
+exec "$PY" "$FALSIFY" guard "$(cat "$1")"
