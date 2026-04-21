@@ -18,6 +18,11 @@ numbers follow [Semantic Versioning](https://semver.org).
   `check_claim`). Optional install via `pip install -e '.[mcp]'`;
   tool logic is implemented, `stdio_server` SDK adapter is
   stubbed pending SDK version pin.
+- `managed_agents/` — Anthropic Console deployment manifests for
+  `verdict-refresher` (scheduled, 6-hour cron) and `claim-auditor`
+  (on-demand webhook).
+- `docs/MANAGED_AGENTS.md` — Console setup guide, cost
+  expectations, rollback, security notes.
 
 ### Notes
 

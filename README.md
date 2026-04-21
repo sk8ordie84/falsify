@@ -137,6 +137,14 @@ against the log without shelling out. See
 [`mcp_server/README.md`](mcp_server/README.md) for the exposed
 resources and tool signatures.
 
+### Managed Agents (optional)
+
+Deploy the two subagents (`verdict-refresher`, `claim-auditor`)
+to Anthropic Console for scheduled and on-demand execution.
+See [docs/MANAGED_AGENTS.md](docs/MANAGED_AGENTS.md) for the
+setup recipe and manifests under
+[`managed_agents/`](managed_agents/).
+
 ## Install the git hook
 
 ```bash

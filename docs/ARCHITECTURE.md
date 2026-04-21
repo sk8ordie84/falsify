@@ -105,6 +105,11 @@ without paging.
   [`mcp_server/`](../mcp_server/) — the four tool functions are
   implemented; the `stdio_server` SDK adapter is scaffolded for
   0.2.0. Install with `pip install -e '.[mcp]'`.
+- **Shipped in 0.1.0 (manifests) / active in 0.2.0:** Managed
+  Agents deployment for `verdict-refresher` (scheduled) and
+  `claim-auditor` (on-demand). Manifests live in
+  [`managed_agents/`](../managed_agents/); Console setup guide in
+  [`docs/MANAGED_AGENTS.md`](MANAGED_AGENTS.md).
 - Managed Agents cloud deployment for scheduled verdict refresh
   (replaces manually invoking `verdict-refresher`).
 - Git `pre-push` hook alongside the existing `commit-msg` hook —

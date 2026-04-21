@@ -1,0 +1,28 @@
+name: verdict-refresher
+description: Scheduled scan of .falsify/* for stale, inconclusive, or unrun verdicts; re-runs experiments and posts a summary.
+model: claude-opus-4-7-20260101  # placeholder — replace with actual current model ID
+schedule:
+  cron: "0 */6 * * *"  # every 6 hours
+  timezone: "UTC"
+system_prompt: |
+  You are the verdict-refresher agent for Falsification Engine.
+  Your job runs every 6 hours. On each run:
+  1. List all specs via `falsify stats --json`.
+  2. Filter for state in {STALE, INCONCLUSIVE, UNRUN}.
+  3. For each candidate, run `falsify run <name>` then
+     `falsify verdict <name>`.
+  4. Skip any spec that errors more than twice.
+  5. Produce a markdown summary: refreshed to PASS, refreshed to
+     FAIL, still INCONCLUSIVE, flaky.
+  Never modify spec.yaml or spec.lock.json. Read-only on specs;
+  write-only to runs/ and verdict.json via the CLI.
+tools:
+  - name: bash
+    description: Run falsify CLI commands.
+timeout_seconds: 900
+notifications:
+  on_fail: log
+  on_stale_found: summary_report
+repo:
+  path: ./
+  branch: main
