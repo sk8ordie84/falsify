@@ -45,6 +45,7 @@ python falsify.py --help
 | `lock <name> [--force]`  | Validate and freeze a claim (canonical YAML + SHA-256)       |
 | `run <name>`             | Execute the experiment; write run artifacts under `runs/`    |
 | `verdict <name>`         | Apply `failure_criteria`; report PASS/FAIL, write verdict    |
+| `diff <name>`            | Canonical YAML diff between locked spec and current spec.yaml|
 | `list [--json]`          | Table of every claim's lock/run/verdict state (or JSON)      |
 | `stats [--json] [--name]`| Aggregate dashboard with counts across all specs             |
 | `guard`                  | Scan mode — non-zero if any claim is FAIL or STALE           |

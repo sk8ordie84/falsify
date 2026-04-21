@@ -68,8 +68,8 @@ class LockCommandTests(unittest.TestCase):
         lock = json.loads(lock_path.read_text())
         self.assertEqual(len(lock["spec_hash"]), 64)
         self.assertIn("locked_at", lock)
-        self.assertIn("canonical_spec_yaml", lock)
-        self.assertIn("accuracy", lock["canonical_spec_yaml"])
+        self.assertIn("canonical_yaml", lock)
+        self.assertIn("accuracy", lock["canonical_yaml"])
 
     def test_lock_rejects_placeholder_values(self) -> None:
         # `init` leaves the template's placeholders in place.

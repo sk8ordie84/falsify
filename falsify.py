@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import difflib
 import hashlib
 import importlib
 import json
@@ -269,7 +270,7 @@ def cmd_lock(args: argparse.Namespace) -> int:
     lock_data = {
         "spec_hash": spec_hash,
         "locked_at": datetime.now(timezone.utc).isoformat(),
-        "canonical_spec_yaml": canonical,
+        "canonical_yaml": canonical,
     }
     lock_path.write_text(
         json.dumps(lock_data, indent=2, sort_keys=True) + "\n"
@@ -279,6 +280,152 @@ def cmd_lock(args: argparse.Namespace) -> int:
     for c in spec["falsification"]["failure_criteria"]:
         print(f"  claim: {c['metric']} {c['direction']} {c['threshold']}")
     return EXIT_PASS
+
+
+def _render_unified_diff(
+    a_text: str, b_text: str, label_a: str, label_b: str
+) -> None:
+    """Write a colored unified diff to stdout.
+
+    ANSI escapes are emitted only when stdout is a TTY.
+    """
+    use_color = sys.stdout.isatty()
+    for line in difflib.unified_diff(
+        a_text.splitlines(keepends=True),
+        b_text.splitlines(keepends=True),
+        fromfile=label_a,
+        tofile=label_b,
+    ):
+        if use_color:
+            if line.startswith("+++") or line.startswith("---"):
+                line = "\x1b[1m" + line + "\x1b[0m"
+            elif line.startswith("+"):
+                line = "\x1b[32m" + line + "\x1b[0m"
+            elif line.startswith("-"):
+                line = "\x1b[31m" + line + "\x1b[0m"
+            elif line.startswith("@@"):
+                line = "\x1b[36m" + line + "\x1b[0m"
+        sys.stdout.write(line)
+
+
+def _canonical_and_hash(spec: Any) -> tuple[str, str]:
+    canonical = _canonicalize(spec)
+    return canonical, hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _diff_file_vs_file(path_a: Path, path_b: Path) -> int:
+    for p in (path_a, path_b):
+        if not p.exists():
+            print(f"falsify diff: {p} not found", file=sys.stderr)
+            return EXIT_BAD_SPEC
+    try:
+        spec_a = yaml.safe_load(path_a.read_text())
+        spec_b = yaml.safe_load(path_b.read_text())
+    except yaml.YAMLError as e:
+        print(f"falsify diff: YAML parse error: {e}", file=sys.stderr)
+        return EXIT_BAD_SPEC
+
+    yaml_a, hash_a = _canonical_and_hash(spec_a)
+    yaml_b, hash_b = _canonical_and_hash(spec_b)
+
+    if yaml_a == yaml_b:
+        print(f"Files are canonically identical @ {hash_a[:12]}")
+        return EXIT_PASS
+
+    _render_unified_diff(
+        yaml_a, yaml_b,
+        f"{path_a}@{hash_a[:12]}",
+        f"{path_b}@{hash_b[:12]}",
+    )
+    return EXIT_HASH_MISMATCH
+
+
+def _diff_lock_vs_file(name: str) -> int:
+    claim_dir = FALSIFY_DIR / name
+    spec_path = claim_dir / "spec.yaml"
+    lock_path = claim_dir / "spec.lock.json"
+
+    if not spec_path.exists():
+        print(
+            f"falsify diff: {spec_path} not found — "
+            f"run `falsify init {name}` first",
+            file=sys.stderr,
+        )
+        return EXIT_BAD_SPEC
+    if not lock_path.exists():
+        print(
+            f"falsify diff: no lock at {lock_path} — "
+            f"run `falsify lock {name}` first",
+            file=sys.stderr,
+        )
+        return EXIT_BAD_SPEC
+
+    try:
+        lock_data = json.loads(lock_path.read_text())
+    except (OSError, json.JSONDecodeError) as e:
+        print(f"falsify diff: failed to read {lock_path}: {e}", file=sys.stderr)
+        return EXIT_BAD_SPEC
+
+    locked_hash = lock_data.get("spec_hash") if isinstance(lock_data, dict) else None
+    locked_yaml = (
+        lock_data.get("canonical_yaml") if isinstance(lock_data, dict) else None
+    )
+
+    try:
+        current_spec = yaml.safe_load(spec_path.read_text())
+    except yaml.YAMLError as e:
+        print(f"falsify diff: failed to parse {spec_path}: {e}", file=sys.stderr)
+        return EXIT_BAD_SPEC
+
+    current_yaml, current_hash = _canonical_and_hash(current_spec)
+
+    if not isinstance(locked_yaml, str):
+        if isinstance(locked_hash, str) and locked_hash == current_hash:
+            print(
+                f"Lock has no canonical_yaml field (legacy format). "
+                f"Spec is unchanged @ {current_hash[:12]}; nothing to diff."
+            )
+            print(
+                f"Re-lock with `falsify lock {name} --force` to populate "
+                f"canonical_yaml for future diffs.",
+            )
+            return EXIT_PASS
+        print(
+            f"falsify diff: legacy lock — no canonical_yaml stored and "
+            f"spec has drifted. Re-lock with "
+            f"`falsify lock {name} --force` to enable diff.",
+            file=sys.stderr,
+        )
+        return EXIT_BAD_SPEC
+
+    locked_short = (locked_hash or "?")[:12]
+    current_short = current_hash[:12]
+
+    if locked_yaml == current_yaml:
+        print(f"Lock and current spec are identical @ {current_short}")
+        return EXIT_PASS
+
+    _render_unified_diff(
+        locked_yaml,
+        current_yaml,
+        f"locked@{locked_short}",
+        f"current@{current_short}",
+    )
+    return EXIT_HASH_MISMATCH
+
+
+def cmd_diff(args: argparse.Namespace) -> int:
+    if args.file_vs_file:
+        path_a, path_b = args.file_vs_file
+        return _diff_file_vs_file(Path(path_a), Path(path_b))
+    if not args.name:
+        print(
+            "falsify diff: name is required for lock-vs-file mode "
+            "(or pass --file-vs-file A B)",
+            file=sys.stderr,
+        )
+        return EXIT_BAD_SPEC
+    return _diff_lock_vs_file(args.name)
 
 
 def _load_locked_spec(
@@ -951,6 +1098,29 @@ def build_parser() -> argparse.ArgumentParser:
     p_run = sub.add_parser("run", help="Evaluate a locked claim against current state")
     p_run.add_argument("name", help="Claim name")
     p_run.set_defaults(func=cmd_run)
+
+    p_diff = sub.add_parser(
+        "diff",
+        help="Unified diff between a locked spec's canonical YAML and the current spec.yaml",
+    )
+    p_diff.add_argument(
+        "name",
+        nargs="?",
+        help="Claim name (required unless --file-vs-file is given)",
+    )
+    p_diff_modes = p_diff.add_mutually_exclusive_group()
+    p_diff_modes.add_argument(
+        "--lock-vs-file",
+        action="store_true",
+        help="Compare the claim's locked canonical YAML against its current spec.yaml (default)",
+    )
+    p_diff_modes.add_argument(
+        "--file-vs-file",
+        nargs=2,
+        metavar=("A", "B"),
+        help="Canonical diff between two arbitrary YAML files",
+    )
+    p_diff.set_defaults(func=cmd_diff)
 
     p_verdict = sub.add_parser("verdict", help="Report PASS/FAIL for a claim")
     p_verdict.add_argument("name", help="Claim name")

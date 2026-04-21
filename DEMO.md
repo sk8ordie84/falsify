@@ -109,6 +109,16 @@ ln -sf "$(pwd)/hooks/commit-msg" .git/hooks/commit-msg
 Now a commit message that asserts a falsified claim is rejected
 before it enters history — the same mechanism CI uses on every push.
 
+## Bonus — detect a tampered spec
+
+```bash
+sed -i 's/threshold: 0.25/threshold: 0.20/' .falsify/juju/spec.yaml
+python3 falsify.py diff juju
+```
+
+diff proves the spec was tampered with — you see exactly what changed
+before re-locking. Exit 3 on any drift; `--force` required to relock.
+
 ## Bonus — see all verdicts at once
 
 ```bash
