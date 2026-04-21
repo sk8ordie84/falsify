@@ -37,23 +37,31 @@ python falsify.py --help
 
 ## Commands
 
-| Command   | Purpose                                                         |
-|-----------|-----------------------------------------------------------------|
-| `init`    | Scaffold a new claim spec                                       |
-| `lock`    | Hash and freeze a claim (pre-registration)                      |
-| `run`     | Evaluate a locked claim against current state                   |
-| `verdict` | Report PASS/FAIL for a claim                                    |
-| `guard`   | CI wrapper — exits non-zero if any locked claim is falsified    |
-| `list`    | List all claims in the current repo with their status           |
+| Command                  | Purpose                                                      |
+|--------------------------|--------------------------------------------------------------|
+| `init <name>`            | Scaffold a new claim spec from `examples/template.yaml`      |
+| `lock <name> [--force]`  | Validate and freeze a claim (canonical YAML + SHA-256)       |
+| `run <name>`             | Execute the experiment; write run artifacts under `runs/`    |
+| `verdict <name>`         | Apply `failure_criteria`; report PASS/FAIL, write verdict    |
+| `list [--json]`          | Table of every claim's lock/run/verdict state (or JSON)      |
+| `guard`                  | Scan mode — non-zero if any claim is FAIL or STALE           |
+| `guard "<text>"`         | Text mode — block affirmative claims vs non-PASS verdicts    |
+| `guard -- <cmd> [args]`  | Wrap mode — run `<cmd>`; on success, fall through to scan    |
 
 ## Exit codes
 
-| Code | Meaning                                                    |
-|------|------------------------------------------------------------|
-| `0`  | PASS — claim survived falsification attempt                |
-| `10` | FAIL — claim was falsified                                 |
-| `2`  | Bad spec — the claim file is malformed                     |
-| `3`  | Hash mismatch — the locked claim was tampered with         |
+| Code | Meaning                                                                |
+|------|------------------------------------------------------------------------|
+| `0`  | PASS — claim survived falsification attempt                            |
+| `10` | FAIL — claim was falsified, or `guard` scan found a FAIL/STALE claim   |
+| `11` | Guard violation — text guard matched a non-PASS claim                  |
+| `2`  | Bad spec — malformed, placeholders present, or verdict INCONCLUSIVE    |
+| `3`  | Hash mismatch — the spec drifted after lock (use `lock --force`)       |
+
+`INCONCLUSIVE` is a run-level outcome rolled into exit `2`: it fires when
+`metric_fn` returns `(value, n)` and `n < minimum_sample_size`. A
+persistent `verdict.json` with `verdict: INCONCLUSIVE` is written so
+`guard` can see the state across invocations.
 
 ## Validation
 
