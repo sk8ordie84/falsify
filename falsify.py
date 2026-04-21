@@ -537,8 +537,84 @@ def cmd_guard(args: argparse.Namespace) -> int:
     return _stub("guard")
 
 
+def _gather_claims(base: Path) -> list[dict]:
+    if not base.exists():
+        return []
+    claims: list[dict] = []
+    for claim_dir in sorted(base.iterdir()):
+        if not claim_dir.is_dir():
+            continue
+        if not (claim_dir / "spec.yaml").exists():
+            continue
+
+        spec_hash: str | None = None
+        lock_path = claim_dir / "spec.lock.json"
+        if lock_path.exists():
+            try:
+                lock_data = json.loads(lock_path.read_text())
+                h = lock_data.get("spec_hash")
+                if isinstance(h, str):
+                    spec_hash = h
+            except (OSError, json.JSONDecodeError):
+                pass
+
+        last_run: str | None = None
+        run_dir = _resolve_latest_run(claim_dir)
+        if run_dir is not None and run_dir.exists():
+            last_run = run_dir.name
+
+        verdict_str: str | None = None
+        observed: float | None = None
+        verdict_path = claim_dir / "verdict.json"
+        if verdict_path.exists():
+            try:
+                v = json.loads(verdict_path.read_text())
+                if isinstance(v, dict):
+                    if isinstance(v.get("verdict"), str):
+                        verdict_str = v["verdict"]
+                    if isinstance(v.get("observed_value"), (int, float)):
+                        observed = float(v["observed_value"])
+            except (OSError, json.JSONDecodeError):
+                pass
+
+        claims.append({
+            "name": claim_dir.name,
+            "locked": spec_hash is not None,
+            "spec_hash": spec_hash,
+            "last_run": last_run,
+            "verdict": verdict_str,
+            "observed_value": observed,
+        })
+    return claims
+
+
 def cmd_list(args: argparse.Namespace) -> int:
-    return _stub("list")
+    claims = _gather_claims(FALSIFY_DIR)
+
+    if args.json:
+        print(json.dumps(claims, indent=2, sort_keys=True))
+        return EXIT_PASS
+
+    if not claims:
+        print("No hypotheses yet. Run `falsify init <name>` to create one.")
+        return EXIT_PASS
+
+    headers = ["NAME", "LOCKED", "LAST RUN", "VERDICT", "OBSERVED"]
+    rows: list[list[str]] = [headers]
+    for c in claims:
+        rows.append([
+            c["name"],
+            c["spec_hash"][:12] if c["spec_hash"] else "-",
+            c["last_run"] or "-",
+            c["verdict"] or "-",
+            f"{c['observed_value']}" if c["observed_value"] is not None else "-",
+        ])
+
+    widths = [max(len(row[i]) for row in rows) for i in range(len(headers))]
+    for row in rows:
+        print("  ".join(cell.ljust(w) for cell, w in zip(row, widths)).rstrip())
+
+    return EXIT_PASS
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -589,6 +665,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_guard.set_defaults(func=cmd_guard)
 
     p_list = sub.add_parser("list", help="List all claims with their status")
+    p_list.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit machine-readable JSON instead of a table",
+    )
     p_list.set_defaults(func=cmd_list)
 
     return parser
