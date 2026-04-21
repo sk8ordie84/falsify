@@ -1642,6 +1642,242 @@ def cmd_export(args: argparse.Namespace) -> int:
     return EXIT_PASS
 
 
+_VERIFY_REQUIRED: dict[str, set[str]] = {
+    "lock": {"name", "ts", "canonical_hash"},
+    "run": {"name", "ts", "stdout_sha256"},
+    "verdict": {"name", "ts", "state", "locked_hash"},
+}
+
+
+def _verify_collect_findings(
+    records: list[tuple[int, dict]],
+) -> list[dict]:
+    findings: list[dict] = []
+
+    for line_no, r in records:
+        t = r.get("type")
+        if t not in _VERIFY_REQUIRED:
+            findings.append({
+                "level": "FAIL",
+                "message": f"unknown record type: {t!r}",
+                "line": line_no,
+            })
+            continue
+        sv = r.get("schema_version")
+        if sv != 1:
+            findings.append({
+                "level": "WARN",
+                "message": f"unknown schema_version: {sv!r}",
+                "line": line_no,
+            })
+        missing = _VERIFY_REQUIRED[t] - set(r.keys())
+        if missing:
+            findings.append({
+                "level": "FAIL",
+                "message": f"{t} missing required fields: {sorted(missing)}",
+                "line": line_no,
+            })
+
+    by_name: dict[str, list[tuple[int, dict]]] = {}
+    for line_no, r in records:
+        name = r.get("name")
+        if not isinstance(name, str):
+            continue
+        by_name.setdefault(name, []).append((line_no, r))
+
+    for name, group in by_name.items():
+        prev_ts: str | None = None
+        for line_no, r in group:
+            ts = r.get("ts")
+            if isinstance(ts, str) and prev_ts is not None and ts < prev_ts:
+                findings.append({
+                    "level": "FAIL",
+                    "message": (
+                        f"{name}: timestamp regression "
+                        f"({ts!r} < {prev_ts!r})"
+                    ),
+                    "line": line_no,
+                })
+            if isinstance(ts, str):
+                prev_ts = ts
+
+        seen: set[tuple] = set()
+        for line_no, r in group:
+            key = (r.get("type"), r.get("ts"))
+            if key in seen:
+                findings.append({
+                    "level": "FAIL",
+                    "message": f"{name}: duplicate ({key[0]}, {key[1]})",
+                    "line": line_no,
+                })
+            seen.add(key)
+
+        current_lock_hash: str | None = None
+        for line_no, r in group:
+            t = r.get("type")
+            if t == "lock":
+                ch = r.get("canonical_hash")
+                if isinstance(ch, str):
+                    current_lock_hash = ch
+            elif t == "run":
+                if current_lock_hash is None:
+                    findings.append({
+                        "level": "FAIL",
+                        "message": f"{name}: run before any lock",
+                        "line": line_no,
+                    })
+            elif t == "verdict":
+                lh = r.get("locked_hash")
+                if current_lock_hash is None:
+                    findings.append({
+                        "level": "FAIL",
+                        "message": f"{name}: verdict before any lock",
+                        "line": line_no,
+                    })
+                elif lh != current_lock_hash:
+                    findings.append({
+                        "level": "FAIL",
+                        "message": (
+                            f"{name}: verdict locked_hash does not match "
+                            f"preceding lock canonical_hash "
+                            f"({lh!r} vs {current_lock_hash!r})"
+                        ),
+                        "line": line_no,
+                    })
+
+    return findings
+
+
+def cmd_verify(args: argparse.Namespace) -> int:
+    path = Path(args.jsonl_path)
+    if not path.exists():
+        print(
+            f"falsify verify: file not found: {path}",
+            file=sys.stderr,
+        )
+        return EXIT_BAD_SPEC
+    try:
+        content = path.read_text()
+    except OSError as e:
+        print(f"falsify verify: cannot read {path}: {e}", file=sys.stderr)
+        return EXIT_BAD_SPEC
+
+    records: list[tuple[int, dict]] = []
+    for idx, line in enumerate(content.splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            obj = json.loads(line)
+        except json.JSONDecodeError as e:
+            print(
+                f"falsify verify: line {idx}: invalid JSON — {e}",
+                file=sys.stderr,
+            )
+            return EXIT_BAD_SPEC
+        if not isinstance(obj, dict):
+            print(
+                f"falsify verify: line {idx}: expected object, got "
+                f"{type(obj).__name__}",
+                file=sys.stderr,
+            )
+            return EXIT_BAD_SPEC
+        records.append((idx, obj))
+
+    findings = _verify_collect_findings(records)
+
+    if content and not content.endswith("\n"):
+        findings.append({
+            "level": "WARN",
+            "message": "file does not end with a newline",
+            "line": len(content.splitlines()),
+        })
+
+    by_name: dict[str, dict] = {}
+    line_to_name: dict[int, str] = {}
+    for line_no, r in records:
+        name = r.get("name")
+        if not isinstance(name, str):
+            continue
+        line_to_name[line_no] = name
+        spec = by_name.setdefault(
+            name,
+            {
+                "name": name,
+                "records": 0,
+                "lock": 0,
+                "run": 0,
+                "verdict": 0,
+                "findings": [],
+            },
+        )
+        spec["records"] += 1
+        t = r.get("type")
+        if t in ("lock", "run", "verdict"):
+            spec[t] += 1
+
+    for f in findings:
+        name = line_to_name.get(f.get("line"))
+        if name and name in by_name:
+            by_name[name]["findings"].append(f)
+
+    for spec in by_name.values():
+        levels = {x["level"] for x in spec["findings"]}
+        if "FAIL" in levels:
+            spec["status"] = "FAIL"
+        elif "WARN" in levels:
+            spec["status"] = "WARN"
+        else:
+            spec["status"] = "OK"
+
+    has_fail = any(f["level"] == "FAIL" for f in findings)
+    has_warn = any(f["level"] == "WARN" for f in findings)
+    treat_warn_as_fail = args.strict and has_warn
+    invalid = has_fail or treat_warn_as_fail
+    verdict_label = "INVALID" if invalid else "VALID"
+
+    spec_list = sorted(by_name.values(), key=lambda s: s["name"])
+    summary = {
+        "ok": sum(1 for s in spec_list if s["status"] == "OK"),
+        "warn": sum(1 for s in spec_list if s["status"] == "WARN"),
+        "fail": sum(1 for s in spec_list if s["status"] == "FAIL"),
+    }
+
+    if args.json:
+        payload = {
+            "verdict": verdict_label,
+            "summary": summary,
+            "specs": [
+                {
+                    "name": s["name"],
+                    "status": s["status"],
+                    "records": s["records"],
+                    "findings": s["findings"],
+                }
+                for s in spec_list
+            ],
+            "findings": findings,
+        }
+        print(json.dumps(payload, indent=2, sort_keys=True))
+    else:
+        print(f"verify {path}: {verdict_label}")
+        for s in spec_list:
+            print(
+                f"  {s['name']}: {s['status']} "
+                f"({s['lock']} lock, {s['run']} run, {s['verdict']} verdict)"
+            )
+            for f in s["findings"]:
+                print(f"    [{f['level']}] line {f['line']}: {f['message']}")
+        orphan = [f for f in findings if line_to_name.get(f.get("line")) is None]
+        for f in orphan:
+            print(f"  [{f['level']}] line {f.get('line', '?')}: {f['message']}")
+        print(
+            f"Summary: {summary['ok']} OK, {summary['warn']} WARN, "
+            f"{summary['fail']} FAIL → {verdict_label}"
+        )
+
+    return EXIT_FAIL if invalid else EXIT_PASS
+
+
 def cmd_version(args: argparse.Namespace) -> int:
     if args.json:
         print(json.dumps({"name": "falsify", "version": __version__}))
@@ -1976,6 +2212,26 @@ def build_parser() -> argparse.ArgumentParser:
         help="Claim text, or `-- cmd args...` for wrap mode",
     )
     p_guard.set_defaults(func=cmd_guard)
+
+    p_verify = sub.add_parser(
+        "verify",
+        help="Audit a JSONL export for chain integrity and ordering",
+    )
+    p_verify.add_argument(
+        "jsonl_path",
+        help="Path to the JSONL file produced by `falsify export`",
+    )
+    p_verify.add_argument(
+        "--strict",
+        action="store_true",
+        help="Treat WARN findings as FAIL (exit 10)",
+    )
+    p_verify.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit a machine-readable JSON report",
+    )
+    p_verify.set_defaults(func=cmd_verify)
 
     p_export = sub.add_parser(
         "export",

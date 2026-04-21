@@ -162,6 +162,18 @@ contents produce byte-identical output. Share with a peer to
 reproduce your verdicts from nothing but this file plus the
 original `spec.yaml`.
 
+## Bonus — verify a peer's audit trail
+
+```bash
+python3 falsify.py verify audit.jsonl
+```
+
+Walks the JSONL and checks that each verdict's `locked_hash` chains
+back to a preceding lock's `canonical_hash`, that timestamps are
+monotonic per spec, and that no records were reordered. If anyone
+tampered with the file after export, the hash chain breaks and
+verify refuses it with exit 10.
+
 ---
 
 ## See also

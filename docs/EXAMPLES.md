@@ -163,3 +163,13 @@ original lock. Two invocations against the same `.falsify/`
 produce byte-identical output, so the peer can re-run `export`
 after re-running your experiment and diff the two files to confirm
 the audit chain matches.
+
+On the receiving end:
+
+    # peer just received audit.jsonl
+    python3 falsify.py verify audit.jsonl   # exit 0 if trustworthy
+
+`verify` walks the JSONL, confirms each verdict's `locked_hash`
+resolves to a preceding lock's `canonical_hash`, checks timestamps
+are monotonic per spec, and refuses any file that was reordered
+or whose hash chain broke after export (exit 10).

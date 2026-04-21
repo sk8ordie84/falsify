@@ -25,9 +25,9 @@ not rhetorical — and CI enforces it on every push.
 
 ## What you get
 
-- A single-file CLI (`falsify`) with **12 subcommands**: `init`,
+- A single-file CLI (`falsify`) with **13 subcommands**: `init`,
   `lock`, `run`, `verdict`, `guard`, `list`, `stats`, `diff`, `hook`,
-  `doctor`, `version`, `export`.
+  `doctor`, `version`, `export`, `verify`.
 - A `commit-msg` git hook that blocks commits whose messages
   contradict a locked verdict.
 - A GitHub Actions workflow that re-verdicts every push and PR

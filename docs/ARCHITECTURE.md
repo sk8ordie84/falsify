@@ -58,6 +58,7 @@ reproducible from what's on disk.
 | `falsify.py::cmd_doctor`  | environment + repo + per-spec health check                             |
 | `falsify.py::cmd_version` | print version string (also as top-level `--version` flag)              |
 | `falsify.py::cmd_export`  | write verdict history as JSONL (audit trail, read-only)                |
+| `falsify.py::cmd_verify`  | audit a JSONL export for chain integrity and ordering                  |
 
 ## Why SHA-256 of canonical YAML (not of the raw file)
 

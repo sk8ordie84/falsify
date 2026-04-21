@@ -32,6 +32,11 @@ numbers follow [Semantic Versioning](https://semver.org).
   `schema_version: 1` and verdict records include a `locked_hash`
   that chains back to the originating lock. Flags: `--output`,
   `--name`, `--since`, `--include-runs`.
+- `falsify verify` — integrity check for JSONL audit trails.
+  Validates hash chain (verdict `locked_hash` ↔ lock
+  `canonical_hash`), per-spec timestamp monotonicity, no record
+  reordering, and schema version. Exit 0 VALID, 10 INVALID,
+  2 bad input. Flags: `--strict`, `--json`.
 - `Dockerfile` + `.dockerignore` — reproducible demo environment
   (`docker run --rm -it falsify-demo` fires the auto-demo).
 - `docs/DOCKER.md` — quick run, interactive session, repo-mount,

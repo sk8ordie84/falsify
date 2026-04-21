@@ -64,6 +64,16 @@ Commands:
 
 - Voiceover: "Now FAIL — brier exceeds the new threshold. And if someone tries to commit a contradicting claim, the guard blocks it. Exit code eleven."
 
+## Bonus — chain-integrity tamper shot (optional, ~5s)
+
+- Action: after the export section (if included), edit a
+  `canonical_hash` field in the JSONL with sed (or in an editor).
+- Command: `python3 falsify.py verify audit.jsonl` → refuses with
+  FAIL line + exit 10.
+- Voiceover: "Tamper the file, the chain breaks. Verify refuses."
+- Drives home chain integrity in 5 seconds. Merge with Scene 4 if
+  the overall cut is running long.
+
 ## Scene 6 — Opus 4.7 layers (2:20–2:45, 25s)
 
 Visual: split screen, file tree on left with highlights:
