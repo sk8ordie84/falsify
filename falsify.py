@@ -2100,6 +2100,178 @@ def cmd_verify(args: argparse.Namespace) -> int:
     return EXIT_FAIL if invalid else EXIT_PASS
 
 
+def _compute_honesty_score(rows: list[dict]) -> tuple[float, dict[str, int]]:
+    """Apply the honesty rubric to stats rows.
+
+    Returns ``(score_clamped_to_[0,1], counts)`` where counts is a
+    breakdown across the seven possible states. Rubric::
+
+        score = (pass_weight_sum + unlocked_penalty) / max(total, 1)
+
+        pass weights:
+          PASS         -> 1.0
+          INCONCLUSIVE -> 0.5
+          FAIL/STALE/UNRUN -> 0.0
+          UNLOCKED     -> -1.0 (penalty applied directly to numerator)
+    """
+    counts = {
+        "PASS": 0,
+        "FAIL": 0,
+        "INCONCLUSIVE": 0,
+        "STALE": 0,
+        "UNRUN": 0,
+        "UNLOCKED": 0,
+    }
+    for r in rows:
+        state = r["state"]
+        if state in counts:
+            counts[state] += 1
+        elif state == "UNKNOWN":
+            counts["UNLOCKED"] += 1
+
+    total = sum(counts.values())
+    if total == 0:
+        return 0.0, counts
+
+    weight_sum = (
+        1.0 * counts["PASS"]
+        + 0.5 * counts["INCONCLUSIVE"]
+        - 1.0 * counts["UNLOCKED"]
+    )
+    raw = weight_sum / total
+    return max(0.0, min(1.0, raw)), counts
+
+
+def _score_status(score: float, threshold: float) -> str:
+    if score >= threshold:
+        return "ok"
+    if score >= threshold * 0.5:
+        return "warn"
+    return "fail"
+
+
+_SCORE_COLORS = {"ok": "brightgreen", "warn": "yellow", "fail": "red"}
+_SCORE_COLOR_HEX = {
+    "brightgreen": "#4c1",
+    "yellow": "#dfb317",
+    "red": "#e05d44",
+}
+
+
+def _score_text_line(score: float, counts: dict[str, int]) -> str:
+    total = sum(counts.values())
+    notes: list[str] = []
+    for state, label in (
+        ("STALE", "stale"),
+        ("UNRUN", "unrun"),
+        ("INCONCLUSIVE", "inconclusive"),
+        ("UNLOCKED", "unlocked"),
+        ("FAIL", "fail"),
+    ):
+        if counts[state]:
+            notes.append(f"{counts[state]} {label}")
+    notes_str = (", " + ", ".join(notes)) if notes else ""
+    return (
+        f"honesty: {score:.2f} ({counts['PASS']}/{total} passing{notes_str})"
+    )
+
+
+def _score_svg(score: float, color: str) -> str:
+    label = "falsify"
+    value = f"{score:.2f}"
+    safe_value = html_module.escape(value, quote=True)
+    label_w = 52
+    value_w = 40
+    total_w = label_w + value_w
+    label_x = label_w / 2
+    value_x = label_w + value_w / 2
+    color_hex = _SCORE_COLOR_HEX[color]
+    return (
+        '<svg xmlns="http://www.w3.org/2000/svg" '
+        f'width="{total_w}" height="20">\n'
+        '  <linearGradient id="b" x2="0" y2="100%">\n'
+        '    <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>\n'
+        '    <stop offset="1" stop-opacity=".1"/>\n'
+        '  </linearGradient>\n'
+        f'  <mask id="a"><rect width="{total_w}" height="20" rx="3" fill="#fff"/></mask>\n'
+        '  <g mask="url(#a)">\n'
+        f'    <path fill="#555" d="M0 0h{label_w}v20H0z"/>\n'
+        f'    <path fill="{color_hex}" d="M{label_w} 0h{value_w}v20H{label_w}z"/>\n'
+        f'    <path fill="url(#b)" d="M0 0h{total_w}v20H0z"/>\n'
+        '  </g>\n'
+        '  <g fill="#fff" text-anchor="middle" '
+        'font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">\n'
+        f'    <text x="{label_x}" y="14">{label}</text>\n'
+        f'    <text x="{value_x}" y="14">{safe_value}</text>\n'
+        '  </g>\n'
+        '</svg>\n'
+    )
+
+
+def cmd_score(args: argparse.Namespace) -> int:
+    """Aggregate a single 'honesty score' across all claims.
+
+    See :func:`_compute_honesty_score` for the rubric. Output formats:
+
+    - ``text``    — one human line.
+    - ``json``    — full breakdown plus status.
+    - ``shields`` — shields.io endpoint v1 JSON.
+    - ``svg``     — minimal flat-style two-section badge.
+
+    Status thresholds: ``ok`` if ``score >= threshold``, ``warn`` if
+    ``score >= threshold * 0.5``, ``fail`` otherwise. Exit ``10`` on
+    ``fail``; ``warn`` exits ``0`` unless ``--strict``.
+    """
+    rows = _gather_stats_rows(FALSIFY_DIR, name_filter=None)
+    score, counts = _compute_honesty_score(rows)
+    threshold = args.threshold
+    status = _score_status(score, threshold)
+    color = _SCORE_COLORS[status]
+    total = sum(counts.values())
+
+    fmt = args.format
+    if fmt == "text":
+        body = _score_text_line(score, counts) + "\n"
+    elif fmt == "json":
+        payload = {
+            "score": round(score, 4),
+            "total": total,
+            "pass": counts["PASS"],
+            "fail": counts["FAIL"],
+            "inconclusive": counts["INCONCLUSIVE"],
+            "stale": counts["STALE"],
+            "unrun": counts["UNRUN"],
+            "unlocked": counts["UNLOCKED"],
+            "threshold": threshold,
+            "status": status,
+        }
+        body = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+    elif fmt == "shields":
+        payload = {
+            "schemaVersion": 1,
+            "label": "falsify",
+            "message": f"{score:.2f}",
+            "color": color,
+        }
+        body = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+    elif fmt == "svg":
+        body = _score_svg(score, color)
+    else:
+        print(f"falsify score: unknown format {fmt!r}", file=sys.stderr)
+        return EXIT_BAD_SPEC
+
+    if args.output:
+        Path(args.output).write_text(body)
+    else:
+        sys.stdout.write(body)
+
+    if status == "fail":
+        return EXIT_FAIL
+    if status == "warn" and args.strict:
+        return EXIT_FAIL
+    return EXIT_PASS
+
+
 def cmd_version(args: argparse.Namespace) -> int:
     if args.json:
         print(json.dumps({"name": "falsify", "version": __version__}))
@@ -2479,6 +2651,33 @@ def build_parser() -> argparse.ArgumentParser:
         help="Emit a machine-readable JSON report",
     )
     p_verify.set_defaults(func=cmd_verify)
+
+    p_score = sub.add_parser(
+        "score",
+        help="Aggregate single-number honesty score with multiple output formats",
+    )
+    p_score.add_argument(
+        "--format",
+        choices=["text", "json", "shields", "svg"],
+        default="text",
+        help="Output format (default text)",
+    )
+    p_score.add_argument(
+        "--output",
+        help="Write to PATH instead of stdout",
+    )
+    p_score.add_argument(
+        "--threshold",
+        type=float,
+        default=0.8,
+        help="Score threshold for 'ok' status (default 0.8)",
+    )
+    p_score.add_argument(
+        "--strict",
+        action="store_true",
+        help="Treat 'warn' status as failure (exit 10)",
+    )
+    p_score.set_defaults(func=cmd_score)
 
     p_export = sub.add_parser(
         "export",

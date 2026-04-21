@@ -64,6 +64,7 @@ reproducible from what's on disk.
 | `falsify.py::cmd_export`  | write verdict history as JSONL (audit trail, read-only)                |
 | `falsify.py::cmd_verify`  | audit a JSONL export for chain integrity and ordering                  |
 | `falsify.py::cmd_replay`  | re-run a stored run's metric and verify the value matches              |
+| `falsify.py::cmd_score`   | aggregate honesty score with text / json / shields / svg outputs       |
 
 ## Why SHA-256 of canonical YAML (not of the raw file)
 

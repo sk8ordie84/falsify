@@ -7,6 +7,28 @@
 
 **Current version: 0.1.0** — run `python3 falsify.py --version`.
 
+## Honesty score
+
+Single-number rubric across every claim in your repo:
+
+```bash
+falsify score
+```
+
+Live shields.io badge for your README — run in CI:
+
+```bash
+falsify score --format shields --output .falsify/badge.json
+```
+
+```markdown
+![honesty](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/<USER>/<REPO>/main/.falsify/badge.json)
+```
+
+Also emits `--format json` (for CI gating) and `--format svg`
+(self-contained badge file). Default exits `10` only when status
+is `fail`; `warn` is silent unless `--strict`.
+
 ## Why
 
 AI agents make empirical claims all day — *"accuracy is up"*, *"the

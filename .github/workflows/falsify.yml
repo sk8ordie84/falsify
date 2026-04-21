@@ -36,6 +36,10 @@ jobs:
       - name: Guard self-check (text mode, no violations expected)
         run: python3 falsify.py guard "brier score below 0.25 holds"
 
+      - name: Exercise score command (smoke only; never blocks)
+        continue-on-error: true
+        run: python3 falsify.py score --format shields --output badge.json || true
+
   mcp-test:
     runs-on: ubuntu-latest
     continue-on-error: true

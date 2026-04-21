@@ -186,3 +186,5 @@ a tampered file would exit 10.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — the design
   principles, data flow, and core invariants.
 - [ROADMAP.md](ROADMAP.md) — what ships next.
+- Add a live honesty badge to your README with
+  `falsify score --format shields --output .falsify/badge.json`.

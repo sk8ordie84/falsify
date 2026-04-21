@@ -68,6 +68,10 @@ numbers follow [Semantic Versioning](https://semver.org).
   mismatch, `3` on stale spec. `cmd_verdict` now also writes
   `verdict.json` into the run dir as a per-run snapshot so
   replay can target arbitrary historical runs.
+- `falsify score` — single-number honesty metric across all
+  claims with text / json / shields.io / svg outputs. Powers
+  README badges and CI gating; default exits `10` only on
+  `fail` status, `--strict` also exits on `warn`.
 - `Dockerfile` + `.dockerignore` — reproducible demo environment
   (`docker run --rm -it falsify-demo` fires the auto-demo).
 - `docs/DOCKER.md` — quick run, interactive session, repo-mount,

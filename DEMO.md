@@ -162,6 +162,17 @@ contents produce byte-identical output. Share with a peer to
 reproduce your verdicts from nothing but this file plus the
 original `spec.yaml`.
 
+## Bonus — project-wide honesty score
+
+```bash
+python3 falsify.py score
+python3 falsify.py score --format shields
+```
+
+A single number across every claim in `.falsify/`. The shields
+form is a JSON endpoint you can drop straight into your README
+for a live badge that turns red when claims start failing.
+
 ## Bonus — proving reproducibility
 
 ```bash
