@@ -120,6 +120,10 @@ ln -sf "$(pwd)/hooks/commit-msg" .git/hooks/commit-msg
 - `.claude/agents/` — the two forked-context subagents.
 - `.github/workflows/` — CI.
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release history.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
