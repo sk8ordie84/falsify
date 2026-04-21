@@ -1,0 +1,102 @@
+# Contributing to Falsification Engine
+
+Thanks for the interest. This project lives or dies by the trust in
+its verdicts, so contributions need to keep the determinism contract
+intact.
+
+## Ground rules
+
+- Every new feature or bug fix must include unittest coverage.
+- Never break the exit-code contract (`0` PASS, `10` FAIL, `2`
+  bad spec, `3` hash mismatch, `11` guard violation). If you need a
+  new code, propose it in an issue first.
+- Canonical YAML hashing is the spine — do not change the
+  canonicalization rules without an RFC-style issue.
+- Stdlib + `pyyaml` only. No new dependencies without discussion.
+
+## Setup
+
+1. Fork and clone.
+2. Install the one dependency: `pip install pyyaml`.
+3. Run the unit tests: `python3 -m unittest discover tests -v`.
+4. Run the smoke test: `bash tests/smoke_test.sh`.
+5. Both must pass before you open a PR.
+
+## Branching and commits
+
+- Branch naming: `feature/<short-slug>` or `fix/<short-slug>`.
+- Commit messages: present-tense verb first, subject line under 72
+  chars. Explain the *why* in the body.
+- If Claude (or any LLM) co-authored the commit, include a
+  `Co-Authored-By:` trailer.
+- One logical change per commit — easier to revert, easier to review.
+
+## Pull requests
+
+- [ ] Tests added and passing (`python3 -m unittest discover tests -v`)
+- [ ] Smoke test passing (`bash tests/smoke_test.sh`)
+- [ ] If you changed `falsify.py` semantics, update `DEMO.md` and
+      `docs/ARCHITECTURE.md`
+- [ ] If you added a CLI flag, update `README.md`
+- [ ] No new dependencies beyond `pyyaml` (unless discussed in an
+      issue first)
+
+## Adding a new CLI subcommand
+
+1. Add `cmd_<name>(args)` in `falsify.py`.
+2. Wire it into the argparse setup alongside the existing
+   subcommands.
+3. Add `tests/test_<name>.py` using `unittest` +
+   `tempfile.TemporaryDirectory` for isolation — every test should
+   run in a throwaway `.falsify/` directory.
+4. Add a one-liner to the commands list in `README.md`.
+5. If the subcommand is juror-demo-relevant, add a mention to
+   `DEMO.md`.
+
+## Adding a Claude Code skill or subagent
+
+- Skills live in `.claude/skills/<name>/SKILL.md` with YAML frontmatter
+  whose keys are `name`, `description`, `allowed-tools`, `context`.
+- Subagents live in `.claude/agents/<name>.md` with YAML frontmatter
+  whose keys are `name`, `description`, `tools`, `model`, `context`.
+- All skills and subagents must use `context: fork` unless there's
+  a justified reason to share parent context.
+- Add a `tests/test_skill_<name>.py` or
+  `tests/test_agent_<name>.py` that validates the frontmatter parses
+  as YAML and contains the required keys.
+- The CI workflow's `skill-lint` job will re-validate every
+  `SKILL.md` and agent file on push.
+
+## Reporting a bug
+
+Open an issue with:
+
+- The exact `falsify` command that failed.
+- Exit code you got.
+- Exit code you expected.
+- Minimal `spec.yaml` that reproduces it.
+- Current git sha (`git rev-parse HEAD`) so we know which commit
+  you were on.
+
+## Security
+
+If you find a way to make `falsify guard` pass on a contradicting
+claim — or to make two semantically different specs produce the
+same canonical hash — open a **private** security advisory or email
+the maintainer directly. Do **not** file a public issue for these;
+they break the core guarantee and deserve a coordinated fix.
+
+## Code style
+
+- Python: type hints on public functions, a docstring on anything
+  more than 5 lines of body.
+- YAML: 2-space indent, lowercase keys, double-quoted strings when
+  the value contains punctuation that YAML plain scalars would
+  mishandle.
+- Markdown: reference-style links where the target is reused, inline
+  links when it's one-off.
+
+## License
+
+By contributing, you agree that your work is released under the
+MIT license of this repository.
