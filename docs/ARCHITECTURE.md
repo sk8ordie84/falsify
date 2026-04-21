@@ -111,6 +111,8 @@ without paging.
 - More claim types (see [docs/EXAMPLES.md](EXAMPLES.md) for
   accuracy / latency / calibration / agreement / AB).
 
+The full post-hackathon plan lives in [ROADMAP.md](../ROADMAP.md).
+
 ## What this is NOT
 
 - **Not a statistical test framework.** We don't compute p-values,

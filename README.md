@@ -151,6 +151,10 @@ ln -sf "$(pwd)/hooks/commit-msg" .git/hooks/commit-msg
 
 See [CHANGELOG.md](CHANGELOG.md) for release history.
 
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md) for the post-hackathon direction.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

@@ -10,6 +10,8 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 - `pyproject.toml` — installable as `pip install .` with a
   `falsify` console entry point (`falsify:main`).
+- `ROADMAP.md` — post-hackathon direction (0.2.0 MCP + Managed
+  Agents, 0.3.0 Bayesian stopping, non-goals, discipline note).
 
 ### Notes
 
