@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import difflib
 import hashlib
+import html as html_module
 import importlib
 import json
 import platform
@@ -995,11 +996,307 @@ def _gather_stats_rows(base: Path, name_filter: str | None) -> list[dict]:
     return rows
 
 
+_HTML_STATS_STYLE = """\
+* { box-sizing: border-box; }
+:root {
+  --bg: #ffffff;
+  --surface: #f6f8fa;
+  --fg: #1f2328;
+  --muted: #656d76;
+  --border: #d1d9e0;
+  --pass: #2ea043;
+  --fail: #da3633;
+  --inconclusive: #d29922;
+  --stale: #6e7681;
+  --unrun: #8b949e;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --fg: #e6edf3;
+    --muted: #8b949e;
+    --border: #30363d;
+  }
+}
+body {
+  margin: 0;
+  padding: 2rem;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.5;
+}
+header.page, section.summary, section.cards, footer.page {
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+header.page { margin-bottom: 1.5rem; }
+h1 { margin: 0 0 0.25rem; font-size: 1.5rem; }
+.subtitle { color: var(--muted); margin: 0; font-size: 0.9rem; }
+section.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.pill {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.pill.state-PASS { border-color: var(--pass); color: var(--pass); }
+.pill.state-FAIL { border-color: var(--fail); color: var(--fail); }
+.pill.state-INCONCLUSIVE { border-color: var(--inconclusive); color: var(--inconclusive); }
+.pill.state-STALE { border-color: var(--stale); color: var(--stale); }
+.pill.state-UNRUN { border-color: var(--unrun); color: var(--unrun); }
+section.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+article.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 6px;
+  padding: 1rem;
+}
+article.card.state-PASS { border-left-color: var(--pass); }
+article.card.state-FAIL { border-left-color: var(--fail); }
+article.card.state-INCONCLUSIVE { border-left-color: var(--inconclusive); }
+article.card.state-STALE { border-left-color: var(--stale); }
+article.card.state-UNRUN { border-left-color: var(--unrun); }
+article.card > header.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+article.card h2 { margin: 0; font-size: 1.05rem; word-break: break-word; }
+.badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  color: #ffffff;
+  white-space: nowrap;
+}
+.badge.state-PASS { background: var(--pass); }
+.badge.state-FAIL { background: var(--fail); }
+.badge.state-INCONCLUSIVE { background: var(--inconclusive); }
+.badge.state-STALE { background: var(--stale); }
+.badge.state-UNRUN { background: var(--unrun); }
+p.claim {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0.25rem 0 0.75rem;
+}
+dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 0.75rem;
+  row-gap: 0.2rem;
+  font-size: 0.85rem;
+}
+dt { color: var(--muted); }
+dd { margin: 0; overflow-wrap: anywhere; }
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+}
+footer.page {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+footer.page a { color: inherit; }
+.empty {
+  color: var(--muted);
+  font-style: italic;
+}
+"""
+
+
+def _truncate_claim(s: str, limit: int = 200) -> str:
+    if len(s) <= limit:
+        return s
+    return s[:limit].rstrip() + "…"
+
+
+def _age_phrase(age_days: int | None) -> str:
+    if age_days is None:
+        return "—"
+    if age_days <= 0:
+        return "today"
+    if age_days == 1:
+        return "1 day ago"
+    return f"{age_days} days ago"
+
+
+def _enrich_html_row(row: dict, base: Path) -> dict:
+    name = row["name"]
+    claim_dir = base / name
+    claim_text = _read_claim_text(claim_dir) or ""
+
+    spec_hash = ""
+    lock_path = claim_dir / "spec.lock.json"
+    if lock_path.exists():
+        try:
+            lock_data = json.loads(lock_path.read_text())
+            h = lock_data.get("spec_hash")
+            if isinstance(h, str):
+                spec_hash = h
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    direction: str | None = None
+    verdict_path = claim_dir / "verdict.json"
+    if verdict_path.exists():
+        try:
+            vd = json.loads(verdict_path.read_text())
+            if isinstance(vd, dict):
+                d = vd.get("direction")
+                if isinstance(d, str):
+                    direction = d
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    return {
+        **row,
+        "claim_text": claim_text,
+        "spec_hash": spec_hash,
+        "direction": direction,
+    }
+
+
+def _render_stats_html(rows: list[dict], generated_at_iso: str) -> str:
+    counts = {"PASS": 0, "FAIL": 0, "INCONCLUSIVE": 0, "STALE": 0, "UNRUN": 0}
+    for r in rows:
+        state = r["state"]
+        key = state if state in counts else "UNRUN"
+        counts[key] += 1
+
+    pills_html = "".join(
+        f'      <span class="pill state-{state}">{state}: {count}</span>\n'
+        for state, count in counts.items()
+    )
+
+    def _cell(value: Any, *, mono: bool = True) -> str:
+        if value is None or value == "":
+            return "—"
+        escaped = html_module.escape(str(value))
+        return f"<code>{escaped}</code>" if mono else escaped
+
+    if not rows:
+        cards_body = '      <p class="empty">No specs yet — run `falsify init &lt;name&gt;` to start.</p>\n'
+    else:
+        card_parts = []
+        for r in rows:
+            name_esc = html_module.escape(r["name"])
+            state = r["state"]
+            state_esc = html_module.escape(state)
+            claim_esc = html_module.escape(_truncate_claim(r.get("claim_text") or ""))
+            metric_cell = _cell(r.get("metric"))
+            value_cell = _cell(r.get("value"))
+            threshold = r.get("threshold")
+            direction = r.get("direction")
+            if threshold is not None and direction:
+                threshold_cell = _cell(f"{direction} {threshold}")
+            elif threshold is not None:
+                threshold_cell = _cell(threshold)
+            else:
+                threshold_cell = "—"
+            n_cell = _cell(r.get("n"))
+            last_run_cell = _cell(r.get("last_run_iso"), mono=False)
+            age_cell = html_module.escape(_age_phrase(r.get("age_days")))
+            hash_short = (r.get("spec_hash") or "")[:8]
+            hash_cell = _cell(hash_short) if hash_short else "—"
+
+            card_parts.append(
+                f'      <article class="card state-{state_esc}">\n'
+                f'        <header class="card-head">\n'
+                f'          <h2>{name_esc}</h2>\n'
+                f'          <span class="badge state-{state_esc}">{state_esc}</span>\n'
+                f'        </header>\n'
+                f'        <p class="claim">{claim_esc if claim_esc else "—"}</p>\n'
+                f'        <dl>\n'
+                f'          <dt>metric</dt><dd>{metric_cell}</dd>\n'
+                f'          <dt>observed</dt><dd>{value_cell}</dd>\n'
+                f'          <dt>threshold</dt><dd>{threshold_cell}</dd>\n'
+                f'          <dt>n</dt><dd>{n_cell}</dd>\n'
+                f'          <dt>last run</dt><dd>{last_run_cell} ({age_cell})</dd>\n'
+                f'          <dt>hash</dt><dd>{hash_cell}</dd>\n'
+                f'        </dl>\n'
+                f'      </article>\n'
+            )
+        cards_body = "".join(card_parts)
+
+    total = len(rows)
+    generated_esc = html_module.escape(generated_at_iso)
+
+    return (
+        '<!DOCTYPE html>\n'
+        '<html lang="en">\n'
+        '<head>\n'
+        '<meta charset="utf-8">\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+        '<title>Falsification Engine — Verdict Dashboard</title>\n'
+        f'<style>\n{_HTML_STATS_STYLE}</style>\n'
+        '</head>\n'
+        '<body>\n'
+        '  <header class="page">\n'
+        '    <h1>Falsification Engine — Verdict Dashboard</h1>\n'
+        f'    <p class="subtitle">{total} spec(s) · Generated {generated_esc}</p>\n'
+        '  </header>\n'
+        '  <section class="summary">\n'
+        f'{pills_html}'
+        '  </section>\n'
+        '  <section class="cards">\n'
+        f'{cards_body}'
+        '  </section>\n'
+        '  <footer class="page">\n'
+        '    <p>Generated by <code>falsify stats --html</code> · '
+        '<a href="https://github.com/&lt;USER&gt;/falsify-hackathon">falsify-hackathon</a></p>\n'
+        '  </footer>\n'
+        '</body>\n'
+        '</html>\n'
+    )
+
+
+def _write_stats_output(text: str, output_path: str | None) -> None:
+    if output_path:
+        Path(output_path).write_text(text)
+    else:
+        sys.stdout.write(text if text.endswith("\n") else text + "\n")
+
+
 def cmd_stats(args: argparse.Namespace) -> int:
     rows = _gather_stats_rows(FALSIFY_DIR, args.name)
 
+    if getattr(args, "html", False):
+        enriched = [_enrich_html_row(r, FALSIFY_DIR) for r in rows]
+        html_text = _render_stats_html(
+            enriched, datetime.now(timezone.utc).isoformat()
+        )
+        _write_stats_output(html_text, getattr(args, "output", None))
+        return EXIT_PASS
+
     if args.json:
-        print(json.dumps(rows, indent=2, sort_keys=True))
+        payload = json.dumps(rows, indent=2, sort_keys=True)
+        _write_stats_output(payload, getattr(args, "output", None))
         return EXIT_PASS
 
     counts = {"PASS": 0, "FAIL": 0, "INCONCLUSIVE": 0, "STALE": 0, "UNRUN": 0}
@@ -1010,6 +1307,7 @@ def cmd_stats(args: argparse.Namespace) -> int:
         else:
             counts["UNRUN"] += 1
 
+    lines: list[str] = []
     if rows:
         headers = ["NAME", "STATE", "METRIC", "VALUE", "THRESHOLD", "N", "AGE(d)"]
         table: list[list[str]] = [headers]
@@ -1025,12 +1323,12 @@ def cmd_stats(args: argparse.Namespace) -> int:
             ])
         widths = [max(len(row[i]) for row in table) for i in range(len(headers))]
         for row in table:
-            print(
+            lines.append(
                 "  ".join(cell.ljust(w) for cell, w in zip(row, widths)).rstrip()
             )
-        print()
+        lines.append("")
 
-    print(
+    lines.append(
         f"{len(rows)} specs: "
         f"{counts['PASS']} PASS, "
         f"{counts['FAIL']} FAIL, "
@@ -1038,6 +1336,12 @@ def cmd_stats(args: argparse.Namespace) -> int:
         f"{counts['STALE']} STALE, "
         f"{counts['UNRUN']} UNRUN"
     )
+    output_path = getattr(args, "output", None)
+    if output_path:
+        Path(output_path).write_text("\n".join(lines) + "\n")
+    else:
+        for line in lines:
+            print(line)
     return EXIT_PASS
 
 
@@ -1569,10 +1873,20 @@ def build_parser() -> argparse.ArgumentParser:
         "stats",
         help="Aggregate dashboard across all locked verdicts (informational)",
     )
-    p_stats.add_argument(
+    stats_mode = p_stats.add_mutually_exclusive_group()
+    stats_mode.add_argument(
         "--json",
         action="store_true",
         help="Emit machine-readable JSON",
+    )
+    stats_mode.add_argument(
+        "--html",
+        action="store_true",
+        help="Emit a self-contained HTML dashboard (inline CSS, zero deps)",
+    )
+    p_stats.add_argument(
+        "--output",
+        help="Write output to PATH instead of stdout",
     )
     p_stats.add_argument(
         "--name",

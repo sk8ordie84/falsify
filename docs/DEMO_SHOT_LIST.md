@@ -68,6 +68,7 @@ Visual: split screen, file tree on left with highlights:
     .github/workflows/falsify.yml
 
 - Voiceover: "Three Claude Code skills. Two forked-context subagents. CI gate. Opus 4.7 orchestrates all five — drafting specs, auditing text, refreshing stale verdicts."
+- Micro-moment (3s max): cut to a browser showing dashboard.html generated from `falsify stats --html` — verdict cards with colored state badges, dark-mode-aware. Quick pan, then back to file tree.
 
 ## Scene 7 — Close (2:45–3:00, 15s)
 

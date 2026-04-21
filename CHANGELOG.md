@@ -23,6 +23,10 @@ numbers follow [Semantic Versioning](https://semver.org).
   (on-demand webhook).
 - `docs/MANAGED_AGENTS.md` — Console setup guide, cost
   expectations, rollback, security notes.
+- `falsify stats --html` — self-contained HTML dashboard with
+  dark-mode-aware inline CSS, per-spec cards with state-colored
+  badges. `--output PATH` writes to a file. `--json` and `--html`
+  are mutually exclusive.
 
 ### Notes
 

@@ -140,11 +140,14 @@ before re-locking. Exit 3 on any drift; `--force` required to relock.
 ```bash
 python3 falsify.py stats
 python3 falsify.py stats --json
+python3 falsify.py stats --html > dashboard.html && open dashboard.html
 ```
 
 One-shot dashboard across every locked spec in `.falsify/` — name,
 state, metric, observed value, threshold, sample size, age in days.
-Aggregate counts on the last line. The JSON form is CI-friendly.
+Aggregate counts on the last line. The JSON form is CI-friendly;
+the `--html` form is a self-contained dark-mode-aware page for
+demos and quick browser review (no external assets).
 
 ---
 
