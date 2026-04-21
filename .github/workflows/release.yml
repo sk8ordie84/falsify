@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install runtime + build deps
+        run: pip install pyyaml build
+
+      - name: Run unittest suite
+        run: python -m unittest discover tests -v
+
+      - name: Run smoke test
+        run: bash tests/smoke_test.sh
+
+      - name: Verify tag matches __version__
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          CODE_VERSION=$(python -c "import falsify; print(falsify.__version__)")
+          if [ "$TAG_VERSION" != "$CODE_VERSION" ]; then
+            echo "Tag version $TAG_VERSION does not match code version $CODE_VERSION"
+            exit 1
+          fi
+
+  build:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build
+        run: pip install build
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  release:
+    needs: [verify, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Extract release notes from CHANGELOG
+        run: |
+          python <<'PY' > release_notes.md
+          import re
+          tag = "${{ github.ref_name }}".lstrip("v")
+          with open("CHANGELOG.md") as f:
+              content = f.read()
+          pattern = rf"## \[{re.escape(tag)}\].*?\n(.*?)(?=\n## \[|\Z)"
+          m = re.search(pattern, content, re.DOTALL)
+          if m:
+              print(m.group(1).strip())
+          else:
+              print(f"Release {tag}. See CHANGELOG.md for details.")
+          PY
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.md
+          files: dist/*
+          draft: false
+          prerelease: false

@@ -103,6 +103,26 @@ they break the core guarantee and deserve a coordinated fix.
 - Markdown: reference-style links where the target is reused, inline
   links when it's one-off.
 
+## Releasing (maintainer notes)
+
+1. Update `__version__` in `falsify.py` to the new version (and
+   `version` in `pyproject.toml` to match — `tests/test_pyproject.py`
+   enforces this).
+2. Update `CHANGELOG.md` — move items from `[Unreleased]` into a
+   new `## [X.Y.Z] — YYYY-MM-DD` section with today's date.
+3. Commit the version bump, then tag and push:
+
+       git tag vX.Y.Z
+       git push origin main --tags
+
+4. `.github/workflows/release.yml` fires on the tag push. It runs
+   the unittest suite + smoke test, verifies the tag matches the
+   code's `__version__`, builds sdist + wheel, and creates the
+   GitHub Release with the matching CHANGELOG section as the body.
+5. Verify the Release page on GitHub once the workflow finishes.
+   If the workflow failed, fix forward — delete the tag locally
+   and remotely, fix the issue, re-tag, re-push.
+
 ## License
 
 By contributing, you agree that your work is released under the

@@ -37,6 +37,10 @@ numbers follow [Semantic Versioning](https://semver.org).
   `canonical_hash`), per-spec timestamp monotonicity, no record
   reordering, and schema version. Exit 0 VALID, 10 INVALID,
   2 bad input. Flags: `--strict`, `--json`.
+- `.github/workflows/release.yml` — tag-triggered release pipeline.
+  Runs tests + smoke, verifies the `v*.*.*` tag matches
+  `falsify.__version__`, builds sdist + wheel, publishes a GitHub
+  Release with the matching `CHANGELOG` section as the body.
 - `Dockerfile` + `.dockerignore` — reproducible demo environment
   (`docker run --rm -it falsify-demo` fires the auto-demo).
 - `docs/DOCKER.md` — quick run, interactive session, repo-mount,

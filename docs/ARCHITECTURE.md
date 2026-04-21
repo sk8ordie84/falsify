@@ -155,3 +155,15 @@ The full post-hackathon plan lives in [ROADMAP.md](../ROADMAP.md).
    directory and the CLI can reproduce the PASS/FAIL decision.
 6. **Installable as a package** (`pip install .`) with a `falsify`
    console entry point, not just a script.
+
+## Release process
+
+- A `v*.*.*` tag push triggers `.github/workflows/release.yml`.
+- The workflow runs the full unittest + smoke suite, then verifies
+  the tag version matches `falsify.__version__` (exits non-zero on
+  mismatch — a mistimed tag bump fails fast).
+- On success, it builds sdist + wheel via `python -m build`,
+  uploads them as a job artifact, and creates a GitHub Release
+  whose body is the matching `CHANGELOG.md [X.Y.Z]` section.
+- `concurrency` is set so two rapid tag pushes don't race each
+  other; the later one waits.
