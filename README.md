@@ -23,8 +23,8 @@ not rhetorical — and CI enforces it on every push.
 
 ## What you get
 
-- A single-file CLI (`falsify`) with **8 subcommands**: `init`,
-  `lock`, `run`, `verdict`, `guard`, `list`, `stats`, `diff`.
+- A single-file CLI (`falsify`) with **9 subcommands**: `init`,
+  `lock`, `run`, `verdict`, `guard`, `list`, `stats`, `diff`, `hook`.
 - A `commit-msg` git hook that blocks commits whose messages
   contradict a locked verdict.
 - A GitHub Actions workflow that re-verdicts every push and PR
@@ -42,6 +42,7 @@ python3 falsify.py init my_claim
 python3 falsify.py lock my_claim
 python3 falsify.py run my_claim
 python3 falsify.py verdict my_claim
+python3 falsify.py hook install      # enable the commit-msg guard
 ```
 
 Exit code `0` on PASS, `10` on FAIL. Everything else is documented

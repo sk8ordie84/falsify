@@ -10,6 +10,7 @@ import importlib
 import json
 import platform
 import re
+import shutil
 import socket
 import string
 import subprocess
@@ -1067,6 +1068,124 @@ def cmd_list(args: argparse.Namespace) -> int:
     return EXIT_PASS
 
 
+def _git_repo_root() -> Path | None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except (FileNotFoundError, OSError):
+        return None
+    if result.returncode != 0:
+        return None
+    path = result.stdout.strip()
+    return Path(path) if path else None
+
+
+def _sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _hook_install(args: argparse.Namespace) -> int:
+    repo_root = _git_repo_root()
+    if repo_root is None:
+        print(
+            "falsify hook install: not in a git repository (or git is "
+            "not installed)",
+            file=sys.stderr,
+        )
+        return EXIT_BAD_SPEC
+
+    source = repo_root / "hooks" / "commit-msg"
+    if not source.exists():
+        print(
+            f"falsify hook install: source hook missing at {source}",
+            file=sys.stderr,
+        )
+        return EXIT_BAD_SPEC
+
+    hooks_dir = repo_root / ".git" / "hooks"
+    hooks_dir.mkdir(parents=True, exist_ok=True)
+    target = hooks_dir / "commit-msg"
+
+    if target.exists() or target.is_symlink():
+        if target.exists() and _sha256_file(target) == _sha256_file(source):
+            print(f"Already installed at {target} (no change)")
+            return EXIT_PASS
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        backup = hooks_dir / f"commit-msg.bak.{ts}"
+        shutil.move(str(target), str(backup))
+        print(f"Backed up existing hook to {backup}")
+
+    shutil.copy2(str(source), str(target))
+    target.chmod(0o755)
+    print(f"Installed commit-msg guard at {target}")
+    return EXIT_PASS
+
+
+def _hook_uninstall(args: argparse.Namespace) -> int:
+    repo_root = _git_repo_root()
+    if repo_root is None:
+        print(
+            "falsify hook uninstall: not in a git repository",
+            file=sys.stderr,
+        )
+        return EXIT_BAD_SPEC
+
+    hooks_dir = repo_root / ".git" / "hooks"
+    target = hooks_dir / "commit-msg"
+    source = repo_root / "hooks" / "commit-msg"
+
+    if not target.exists():
+        print(f"Nothing to uninstall — no hook at {target}")
+        return EXIT_PASS
+
+    matches_ours = (
+        source.exists() and _sha256_file(target) == _sha256_file(source)
+    )
+    if matches_ours:
+        target.unlink()
+        print(f"Removed {target}")
+    else:
+        print(
+            f"Hook at {target} does not match ours — leaving it in place "
+            f"(it may be user-authored).",
+            file=sys.stderr,
+        )
+
+    backups = sorted(
+        hooks_dir.glob("commit-msg.bak.*"), reverse=True
+    )
+    if backups and matches_ours:
+        latest = backups[0]
+        if args.force:
+            shutil.move(str(latest), str(target))
+            target.chmod(0o755)
+            print(f"Restored previous hook from {latest.name}")
+        else:
+            print(
+                f"Backup found at {latest}. "
+                f"Re-run with --force to restore it."
+            )
+
+    return EXIT_PASS
+
+
+def cmd_hook(args: argparse.Namespace) -> int:
+    if args.action == "install":
+        return _hook_install(args)
+    if args.action == "uninstall":
+        return _hook_uninstall(args)
+    print(f"falsify hook: unknown action {args.action!r}", file=sys.stderr)
+    return EXIT_BAD_SPEC
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="falsify",
@@ -1143,6 +1262,33 @@ def build_parser() -> argparse.ArgumentParser:
         help="Claim text, or `-- cmd args...` for wrap mode",
     )
     p_guard.set_defaults(func=cmd_guard)
+
+    p_hook = sub.add_parser(
+        "hook",
+        help="Install or uninstall the commit-msg guard hook",
+    )
+    hook_sub = p_hook.add_subparsers(dest="action", required=True)
+    p_hook_install = hook_sub.add_parser(
+        "install",
+        help="Copy hooks/commit-msg into .git/hooks/, backing up any existing hook",
+    )
+    p_hook_install.add_argument(
+        "--force",
+        action="store_true",
+        help="Reserved for install — currently unused, accepted for symmetry",
+    )
+    p_hook_install.set_defaults(func=cmd_hook)
+
+    p_hook_uninstall = hook_sub.add_parser(
+        "uninstall",
+        help="Remove the installed commit-msg hook (restore .bak with --force)",
+    )
+    p_hook_uninstall.add_argument(
+        "--force",
+        action="store_true",
+        help="Restore the most recent .bak backup without prompting",
+    )
+    p_hook_uninstall.set_defaults(func=cmd_hook)
 
     p_list = sub.add_parser("list", help="List all claims with their status")
     p_list.add_argument(

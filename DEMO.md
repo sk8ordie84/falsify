@@ -103,9 +103,10 @@ had been FAIL or INCONCLUSIVE, the same sentence would have exited
 Install the hook so every commit gets the same check automatically:
 
 ```bash
-ln -sf "$(pwd)/hooks/commit-msg" .git/hooks/commit-msg
+python3 falsify.py hook install
 ```
 
+Installs the commit-msg guard; backs up any pre-existing hook.
 Now a commit message that asserts a falsified claim is rejected
 before it enters history — the same mechanism CI uses on every push.
 
