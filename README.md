@@ -51,6 +51,17 @@ python3 falsify.py hook install      # enable the commit-msg guard
 Exit code `0` on PASS, `10` on FAIL. Everything else is documented
 below.
 
+### Developer commands
+
+```bash
+make install   # pip install pyyaml
+make test      # run unittest suite
+make smoke     # run tests/smoke_test.sh
+make demo      # JUJU end-to-end (lock → run → verdict)
+```
+
+See [Makefile](Makefile) for all targets (`make help`).
+
 ## Exit codes
 
 | Code | Meaning                                       |

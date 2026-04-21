@@ -17,10 +17,10 @@ intact.
 ## Setup
 
 1. Fork and clone.
-2. Install the one dependency: `pip install pyyaml`.
-3. Run the unit tests: `python3 -m unittest discover tests -v`.
-4. Run the smoke test: `bash tests/smoke_test.sh`.
-5. Both must pass before you open a PR.
+2. Install the one dependency: `make install`.
+3. Run the full local CI suite: `make ci` (unittest + smoke + JUJU
+   end-to-end + skill lint).
+4. All of those must pass before you open a PR.
 
 ## Branching and commits
 

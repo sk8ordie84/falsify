@@ -48,10 +48,17 @@ htmlcov/
 .idea/
 *.swp
 *.swo
+*~
 .DS_Store
 Thumbs.db
 
 # Falsification Engine runtime artifacts
+# (we intentionally do NOT ignore .falsify/ entirely — spec.yaml,
+# spec.lock.json, and verdict.json may be committed per-claim;
+# only per-run directories are runtime-only.)
+.falsify/*/runs/
 .falsify/cache/
-.falsify/run/
 *.falsify.log
+
+# Git hook backups created by `falsify hook install`
+.git/hooks/commit-msg.bak.*

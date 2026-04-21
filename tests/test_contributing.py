@@ -25,8 +25,8 @@ class ContributingTests(unittest.TestCase):
         self.assertIn("Ground rules", self.text)
 
     def test_has_setup(self) -> None:
-        self.assertIn("pip install pyyaml", self.text)
-        self.assertIn("smoke_test.sh", self.text)
+        self.assertIn("make install", self.text)
+        self.assertIn("make ci", self.text)
 
     def test_has_pr_checklist(self) -> None:
         checkboxes = re.findall(r"^- \[ \] ", self.text, re.MULTILINE)
