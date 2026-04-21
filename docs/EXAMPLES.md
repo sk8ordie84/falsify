@@ -147,3 +147,19 @@ hash-anchored, CI-gated artifact, regardless of domain.
    CI enforces it automatically:
 
        python3 falsify.py hook install
+
+## Sharing a claim with a peer
+
+When you want a reviewer, regulator, or collaborator to verify your
+verdicts from scratch, export the audit trail and ship them the
+JSONL plus the original `spec.yaml`:
+
+    python3 falsify.py export --include-runs > audit.jsonl
+
+The file has one JSON object per event — every lock, every run,
+every verdict — each with a `schema_version`, a timestamp, and
+(for verdict records) a `locked_hash` that chains back to the
+original lock. Two invocations against the same `.falsify/`
+produce byte-identical output, so the peer can re-run `export`
+after re-running your experiment and diff the two files to confirm
+the audit chain matches.

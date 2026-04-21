@@ -1483,6 +1483,165 @@ def _hook_uninstall(args: argparse.Namespace) -> int:
     return EXIT_PASS
 
 
+def _export_records_for_spec(
+    claim_dir: Path, include_runs: bool
+) -> list[dict]:
+    records: list[dict] = []
+    name = claim_dir.name
+    spec_path = claim_dir / "spec.yaml"
+    lock_path = claim_dir / "spec.lock.json"
+    verdict_path = claim_dir / "verdict.json"
+
+    locked_hash = ""
+    if lock_path.exists() and spec_path.exists():
+        try:
+            lock_data = json.loads(lock_path.read_text())
+            spec = yaml.safe_load(spec_path.read_text())
+        except (yaml.YAMLError, OSError, json.JSONDecodeError):
+            spec = None
+            lock_data = None
+
+        if isinstance(lock_data, dict) and isinstance(spec, dict):
+            h = lock_data.get("spec_hash")
+            if isinstance(h, str):
+                locked_hash = h
+            locked_at = lock_data.get("locked_at")
+
+            snippet: dict = {}
+            claim = spec.get("claim")
+            if isinstance(claim, str):
+                snippet["claim"] = _truncate_claim(claim)
+            criteria = (
+                spec.get("falsification", {}).get("failure_criteria") or []
+            )
+            if criteria and isinstance(criteria[0], dict):
+                first = criteria[0]
+                for k in ("metric", "direction", "threshold"):
+                    if k in first:
+                        snippet[k] = first[k]
+
+            if isinstance(locked_at, str) and locked_at:
+                records.append({
+                    "type": "lock",
+                    "schema_version": 1,
+                    "name": name,
+                    "ts": locked_at,
+                    "canonical_hash": locked_hash,
+                    "spec_snippet": snippet,
+                })
+
+    if include_runs:
+        runs_dir = claim_dir / "runs"
+        if runs_dir.exists():
+            for run_dir in sorted(runs_dir.iterdir()):
+                if not run_dir.is_dir():
+                    continue
+                meta_path = run_dir / "run_meta.json"
+                if not meta_path.exists():
+                    continue
+                try:
+                    meta = json.loads(meta_path.read_text())
+                except (OSError, json.JSONDecodeError):
+                    continue
+                stdout_path = run_dir / "stdout.txt"
+                stdout_sha256 = ""
+                stdout_sample = ""
+                if stdout_path.exists():
+                    try:
+                        raw = stdout_path.read_bytes()
+                        stdout_sha256 = hashlib.sha256(raw).hexdigest()
+                        stdout_sample = raw.decode("utf-8", errors="replace")[:200]
+                    except OSError:
+                        pass
+                ts = meta.get("start")
+                if not isinstance(ts, str):
+                    continue
+                records.append({
+                    "type": "run",
+                    "schema_version": 1,
+                    "name": name,
+                    "ts": ts,
+                    "duration_s": meta.get("duration_s"),
+                    "exit_code": meta.get("returncode"),
+                    "stdout_sha256": stdout_sha256,
+                    "stdout_sample": stdout_sample,
+                })
+
+    if verdict_path.exists():
+        try:
+            vd = json.loads(verdict_path.read_text())
+        except (OSError, json.JSONDecodeError):
+            vd = None
+        if isinstance(vd, dict):
+            ts = vd.get("checked_at")
+            if isinstance(ts, str) and ts:
+                records.append({
+                    "type": "verdict",
+                    "schema_version": 1,
+                    "name": name,
+                    "ts": ts,
+                    "state": vd.get("verdict", ""),
+                    "metric_value": vd.get("observed_value"),
+                    "threshold": vd.get("threshold"),
+                    "direction": vd.get("direction", ""),
+                    "n": vd.get("sample_size"),
+                    "locked_hash": locked_hash,
+                })
+
+    return records
+
+
+def cmd_export(args: argparse.Namespace) -> int:
+    all_records: list[dict] = []
+    for claim_dir in _iter_claim_dirs(FALSIFY_DIR):
+        if args.name and args.name not in claim_dir.name:
+            continue
+        all_records.extend(
+            _export_records_for_spec(claim_dir, args.include_runs)
+        )
+
+    if args.since:
+        try:
+            since_dt = datetime.fromisoformat(args.since)
+        except ValueError:
+            print(
+                f"falsify export: bad --since value {args.since!r} — "
+                f"expected ISO 8601 (YYYY-MM-DD or ...Thh:mm:ss+00:00)",
+                file=sys.stderr,
+            )
+            return EXIT_BAD_SPEC
+        if since_dt.tzinfo is None:
+            since_dt = since_dt.replace(tzinfo=timezone.utc)
+
+        filtered: list[dict] = []
+        for r in all_records:
+            ts_raw = r.get("ts", "")
+            if not isinstance(ts_raw, str) or not ts_raw:
+                continue
+            try:
+                rts = datetime.fromisoformat(ts_raw)
+            except ValueError:
+                continue
+            if rts.tzinfo is None:
+                rts = rts.replace(tzinfo=timezone.utc)
+            if rts >= since_dt:
+                filtered.append(r)
+        all_records = filtered
+
+    all_records.sort(
+        key=lambda r: (r.get("ts", ""), r.get("type", ""), r.get("name", ""))
+    )
+
+    lines = [json.dumps(r, sort_keys=True) for r in all_records]
+    output_text = ("\n".join(lines) + "\n") if lines else ""
+
+    if args.output:
+        Path(args.output).write_text(output_text)
+    else:
+        sys.stdout.write(output_text)
+    return EXIT_PASS
+
+
 def cmd_version(args: argparse.Namespace) -> int:
     if args.json:
         print(json.dumps({"name": "falsify", "version": __version__}))
@@ -1817,6 +1976,27 @@ def build_parser() -> argparse.ArgumentParser:
         help="Claim text, or `-- cmd args...` for wrap mode",
     )
     p_guard.set_defaults(func=cmd_guard)
+
+    p_export = sub.add_parser(
+        "export",
+        help="Write the verdict history as JSONL (audit trail, read-only)",
+    )
+    p_export.add_argument(
+        "--output", help="Write to PATH instead of stdout",
+    )
+    p_export.add_argument(
+        "--name", help="Filter by claim-name substring",
+    )
+    p_export.add_argument(
+        "--since",
+        help="Emit only records with ts >= this ISO 8601 date",
+    )
+    p_export.add_argument(
+        "--include-runs",
+        action="store_true",
+        help="Include run records with stdout SHA-256 and a 200-char sample",
+    )
+    p_export.set_defaults(func=cmd_export)
 
     p_doctor = sub.add_parser(
         "doctor",

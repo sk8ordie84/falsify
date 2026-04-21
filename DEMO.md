@@ -149,6 +149,19 @@ Aggregate counts on the last line. The JSON form is CI-friendly;
 the `--html` form is a self-contained dark-mode-aware page for
 demos and quick browser review (no external assets).
 
+## Bonus — audit trail
+
+```bash
+python3 falsify.py export > audit.jsonl
+wc -l audit.jsonl
+```
+
+One JSON line per event (lock / verdict; add `--include-runs` for
+run records too). Append-only. Deterministic — same `.falsify/`
+contents produce byte-identical output. Share with a peer to
+reproduce your verdicts from nothing but this file plus the
+original `spec.yaml`.
+
 ---
 
 ## See also

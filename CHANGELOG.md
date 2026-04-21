@@ -27,6 +27,11 @@ numbers follow [Semantic Versioning](https://semver.org).
   dark-mode-aware inline CSS, per-spec cards with state-colored
   badges. `--output PATH` writes to a file. `--json` and `--html`
   are mutually exclusive.
+- `falsify export` — deterministic JSONL audit trail of every
+  lock, run, and verdict. Read-only. Records carry
+  `schema_version: 1` and verdict records include a `locked_hash`
+  that chains back to the originating lock. Flags: `--output`,
+  `--name`, `--since`, `--include-runs`.
 - `Dockerfile` + `.dockerignore` — reproducible demo environment
   (`docker run --rm -it falsify-demo` fires the auto-demo).
 - `docs/DOCKER.md` — quick run, interactive session, repo-mount,
