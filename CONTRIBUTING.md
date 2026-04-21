@@ -75,7 +75,7 @@ Open an issue with:
 - Exit code you got.
 - Exit code you expected.
 - Minimal `spec.yaml` that reproduces it.
-- Current git sha (`git rev-parse HEAD`) so we know which commit
+- Output of `python3 falsify.py --version` so we know which version
   you were on.
 
 ## Security

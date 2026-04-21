@@ -21,6 +21,8 @@ from typing import Any, Callable
 
 import yaml
 
+__version__ = "0.1.0"
+
 EXIT_PASS = 0
 EXIT_FAIL = 10
 EXIT_BAD_SPEC = 2
@@ -1177,6 +1179,14 @@ def _hook_uninstall(args: argparse.Namespace) -> int:
     return EXIT_PASS
 
 
+def cmd_version(args: argparse.Namespace) -> int:
+    if args.json:
+        print(json.dumps({"name": "falsify", "version": __version__}))
+    else:
+        print(f"falsify {__version__}")
+    return EXIT_PASS
+
+
 def _doctor_env_checks() -> list[dict]:
     out: list[dict] = []
 
@@ -1419,7 +1429,20 @@ def build_parser() -> argparse.ArgumentParser:
         prog="falsify",
         description="Pre-registration + CI for AI-agent claims.",
     )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"falsify {__version__}",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
+
+    p_version = sub.add_parser("version", help="Print the version")
+    p_version.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit machine-readable JSON: {name, version}",
+    )
+    p_version.set_defaults(func=cmd_version)
 
     p_init = sub.add_parser("init", help="Scaffold a new claim spec")
     p_init.add_argument(

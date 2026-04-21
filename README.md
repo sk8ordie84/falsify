@@ -5,6 +5,8 @@
 
 <!-- ![CI](https://github.com/<user>/<repo>/actions/workflows/falsify.yml/badge.svg) ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg) -->
 
+**Current version: 0.1.0** — run `python3 falsify.py --version`.
+
 ## Why
 
 AI agents make empirical claims all day — *"accuracy is up"*, *"the
@@ -23,9 +25,9 @@ not rhetorical — and CI enforces it on every push.
 
 ## What you get
 
-- A single-file CLI (`falsify`) with **10 subcommands**: `init`,
+- A single-file CLI (`falsify`) with **11 subcommands**: `init`,
   `lock`, `run`, `verdict`, `guard`, `list`, `stats`, `diff`, `hook`,
-  `doctor`.
+  `doctor`, `version`.
 - A `commit-msg` git hook that blocks commits whose messages
   contradict a locked verdict.
 - A GitHub Actions workflow that re-verdicts every push and PR
