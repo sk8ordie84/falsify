@@ -4,6 +4,11 @@ Thanks for the interest. This project lives or dies by the trust in
 its verdicts, so contributions need to keep the determinism contract
 intact.
 
+## Code of conduct
+
+By participating, you agree to uphold the Code of Conduct. See
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
 ## Ground rules
 
 - Every new feature or bug fix must include unittest coverage.

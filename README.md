@@ -155,6 +155,8 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 MIT. See [LICENSE](LICENSE).
 
+See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community standards.
+
 ## Built with
 
 Claude Opus 4.7 (1M context), in five days, for the Anthropic
