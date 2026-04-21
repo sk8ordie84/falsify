@@ -91,6 +91,8 @@ falsify hook install      # enable the commit-msg guard
 Exit code `0` on PASS, `10` on FAIL. Everything else is documented
 below.
 
+New to pre-registration? Walk through [TUTORIAL.md](TUTORIAL.md) — 15 minutes, zero to first locked claim.
+
 ### Developer commands
 
 ```bash

@@ -1,0 +1,79 @@
+"""Tests for TUTORIAL.md."""
+
+from __future__ import annotations
+
+import re
+import unittest
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+TUTORIAL = REPO_ROOT / "TUTORIAL.md"
+README = REPO_ROOT / "README.md"
+CONTRIBUTING = REPO_ROOT / "CONTRIBUTING.md"
+CHANGELOG = REPO_ROOT / "CHANGELOG.md"
+
+
+class TutorialTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.assertTrue(TUTORIAL.exists(), f"TUTORIAL.md missing at {TUTORIAL}")
+        self.text = TUTORIAL.read_text()
+
+    def test_tutorial_exists(self) -> None:
+        self.assertTrue(TUTORIAL.is_file())
+        self.assertGreater(len(self.text), 0)
+
+    def test_has_all_sections(self) -> None:
+        for n in range(1, 8):
+            self.assertRegex(
+                self.text,
+                rf"(?m)^## Step {n}\b",
+                f"missing '## Step {n}' heading",
+            )
+        for heading in (
+            "Prerequisites",
+            "What you will build",
+            "What just happened",
+            "Where to go next",
+        ):
+            self.assertIn(heading, self.text, f"missing section: {heading!r}")
+
+    def test_mentions_core_commands(self) -> None:
+        for cmd in (
+            "falsify init",
+            "falsify lock",
+            "falsify run",
+            "falsify verdict",
+            "falsify list",
+            "falsify stats",
+            "falsify export",
+            "falsify verify",
+        ):
+            self.assertIn(cmd, self.text, f"missing command: {cmd!r}")
+
+    def test_no_nested_code_fences(self) -> None:
+        self.assertEqual(
+            self.text.count("```"),
+            0,
+            "TUTORIAL.md must use 4-space indented code blocks, "
+            "not triple-backtick fences",
+        )
+
+    def test_readme_links_tutorial(self) -> None:
+        self.assertIn("(TUTORIAL.md)", README.read_text())
+
+    def test_contributing_mentions_tutorial(self) -> None:
+        self.assertIn("TUTORIAL.md", CONTRIBUTING.read_text())
+
+    def test_changelog_mentions_tutorial(self) -> None:
+        text = CHANGELOG.read_text()
+        m = re.search(
+            r"## \[Unreleased\](.*?)(?=\n## \[|\Z)",
+            text,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(m, "Unreleased section not found")
+        self.assertIn("TUTORIAL", m.group(1))
+
+
+if __name__ == "__main__":
+    unittest.main()

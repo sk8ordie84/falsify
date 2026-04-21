@@ -48,6 +48,8 @@ numbers follow [Semantic Versioning](https://semver.org).
   standard hygiene hooks plus three local ones
   (`falsify-guard-local`, `falsify-doctor-local`, `unittest-fast`).
 - `docs/PRE_COMMIT.md` — setup guide for both use cases.
+- `TUTORIAL.md` — 15-minute hands-on walkthrough from init to
+  first locked PASS/FAIL cycle.
 - `Dockerfile` + `.dockerignore` — reproducible demo environment
   (`docker run --rm -it falsify-demo` fires the auto-demo).
 - `docs/DOCKER.md` — quick run, interactive session, repo-mount,

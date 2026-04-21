@@ -11,6 +11,9 @@ By participating, you agree to uphold the Code of Conduct. See
 
 ## Ground rules
 
+- If you've never used falsify before, do [TUTORIAL.md](TUTORIAL.md)
+  first — it's the fastest way to internalize the lock-then-run
+  contract before you start changing the code.
 - Every new feature or bug fix must include unittest coverage.
 - Never break the exit-code contract (`0` PASS, `10` FAIL, `2`
   bad spec, `3` hash mismatch, `11` guard violation). If you need a

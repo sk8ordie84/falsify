@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import importlib.util
-import tomllib
 import unittest
 from pathlib import Path
+
+try:
+    import tomllib  # Python 3.11+
+except ImportError:  # pragma: no cover
+    tomllib = None
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PYPROJECT = REPO_ROOT / "pyproject.toml"
@@ -20,6 +24,7 @@ def _load_falsify_version() -> str:
     return module.__version__
 
 
+@unittest.skipUnless(tomllib is not None, "tomllib requires Python 3.11+")
 class PyprojectTests(unittest.TestCase):
     def setUp(self) -> None:
         self.assertTrue(
