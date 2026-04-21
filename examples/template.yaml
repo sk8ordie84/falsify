@@ -10,7 +10,7 @@ claim: "<one-sentence hypothesis that can, in principle, be proven wrong>"
 falsification:
   failure_criteria:
     - metric: "<metric name, must match a key returned by metric_fn>"
-      direction: "<above|below|equal|not_equal|at_least|at_most>"
+      direction: "<above|below|equals>"
       threshold: 0.0  # TODO: real threshold
   minimum_sample_size: 1  # TODO: real n
   stopping_rule: "<when to stop — e.g. 'after 1000 samples' or 'after 1 epoch'>"

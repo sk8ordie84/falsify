@@ -1,0 +1,13 @@
+claim: "Eval script reports accuracy strictly above 0.99."
+
+falsification:
+  failure_criteria:
+    - metric: accuracy
+      direction: above
+      threshold: 0.99
+  minimum_sample_size: 1
+  stopping_rule: "single run of the echo command"
+
+experiment:
+  command: "echo 0.90"
+  metric_fn: "metrics:accuracy"

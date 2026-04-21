@@ -5,8 +5,12 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib
 import json
+import platform
 import re
+import socket
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,6 +29,8 @@ SCHEMA_PATH = SCRIPT_DIR / "hypothesis.schema.yaml"
 FALSIFY_DIR = Path(".falsify")
 
 _FALLBACK_PLACEHOLDER_MARKERS = ("<", "TODO", "FIXME", "REPLACE_ME", "XXX")
+_RUN_TIMEOUT_S = 300
+_EQUALS_EPSILON = 1e-9
 
 _TYPE_CHECKERS: dict[str, Callable[[Any], bool]] = {
     "string": lambda v: isinstance(v, str),
@@ -260,16 +266,271 @@ def cmd_lock(args: argparse.Namespace) -> int:
 
     print(f"✓ Locked {args.name} @ {spec_hash[:12]}")
     for c in spec["falsification"]["failure_criteria"]:
-        print(f"  falsifies if {c['metric']} {c['direction']} {c['threshold']}")
+        print(f"  claim: {c['metric']} {c['direction']} {c['threshold']}")
     return EXIT_PASS
 
 
+def _load_locked_spec(
+    claim_dir: Path,
+) -> tuple[dict | None, dict | None, str]:
+    """Return (spec, lock_data, error_message). On error, spec and lock are None."""
+    spec_path = claim_dir / "spec.yaml"
+    lock_path = claim_dir / "spec.lock.json"
+
+    if not lock_path.exists():
+        return None, None, (
+            f"no locked spec at {lock_path} — "
+            f"run `falsify lock {claim_dir.name}` first."
+        )
+    if not spec_path.exists():
+        return None, None, f"{spec_path} not found."
+
+    try:
+        spec = yaml.safe_load(spec_path.read_text())
+    except yaml.YAMLError as e:
+        return None, None, f"failed to parse {spec_path}: {e}"
+    try:
+        lock_data = json.loads(lock_path.read_text())
+    except json.JSONDecodeError as e:
+        return None, None, f"failed to parse {lock_path}: {e}"
+
+    return spec, lock_data, ""
+
+
+def _verify_lock_hash(spec: dict, lock_data: dict) -> bool:
+    current_hash = hashlib.sha256(
+        _canonicalize(spec).encode("utf-8")
+    ).hexdigest()
+    return lock_data.get("spec_hash") == current_hash
+
+
+def _update_latest_pointer(claim_dir: Path, timestamp: str) -> None:
+    latest = claim_dir / "latest_run"
+    if latest.is_symlink() or latest.exists():
+        latest.unlink()
+    try:
+        latest.symlink_to(Path("runs") / timestamp)
+    except OSError:
+        latest.write_text(timestamp + "\n")
+
+
+def _resolve_latest_run(claim_dir: Path) -> Path | None:
+    latest = claim_dir / "latest_run"
+    if latest.is_symlink():
+        target = latest.readlink()
+        if target.is_absolute():
+            return target
+        return (claim_dir / target).resolve()
+    if latest.is_file():
+        ts = latest.read_text().strip()
+        if ts:
+            return claim_dir / "runs" / ts
+    return None
+
+
 def cmd_run(args: argparse.Namespace) -> int:
-    return _stub("run")
+    claim_dir = FALSIFY_DIR / args.name
+    spec, lock_data, err = _load_locked_spec(claim_dir)
+    if err:
+        print(f"falsify run: {err}", file=sys.stderr)
+        return EXIT_BAD_SPEC
+
+    assert spec is not None and lock_data is not None
+    if not _verify_lock_hash(spec, lock_data):
+        print(
+            f"falsify run: spec modified after lock. "
+            f"Re-lock with `falsify lock {args.name} --force`.",
+            file=sys.stderr,
+        )
+        return EXIT_HASH_MISMATCH
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S_%fZ")
+    run_dir = claim_dir / "runs" / timestamp
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    (run_dir / "spec.lock.json").write_text(
+        (claim_dir / "spec.lock.json").read_text()
+    )
+
+    command = spec["experiment"]["command"]
+    start = datetime.now(timezone.utc)
+    timed_out = False
+    try:
+        result = subprocess.run(
+            command,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=_RUN_TIMEOUT_S,
+            cwd=str(Path.cwd()),
+        )
+        stdout, stderr, returncode = (
+            result.stdout,
+            result.stderr,
+            result.returncode,
+        )
+    except subprocess.TimeoutExpired as e:
+        stdout = e.stdout or ""
+        stderr = (e.stderr or "") + f"\n[timeout after {_RUN_TIMEOUT_S}s]\n"
+        returncode = 124
+        timed_out = True
+    end = datetime.now(timezone.utc)
+
+    (run_dir / "stdout.txt").write_text(stdout)
+    (run_dir / "stderr.txt").write_text(stderr)
+
+    meta = {
+        "command": command,
+        "start": start.isoformat(),
+        "end": end.isoformat(),
+        "duration_s": round((end - start).total_seconds(), 6),
+        "returncode": returncode,
+        "timed_out": timed_out,
+        "hostname": socket.gethostname(),
+        "python_version": platform.python_version(),
+    }
+    (run_dir / "run_meta.json").write_text(
+        json.dumps(meta, indent=2, sort_keys=True) + "\n"
+    )
+
+    _update_latest_pointer(claim_dir, timestamp)
+
+    if returncode != 0:
+        print(
+            f"falsify run: command exited with code {returncode} "
+            f"(run dir: {run_dir})",
+            file=sys.stderr,
+        )
+        if stderr.strip():
+            sys.stderr.write(stderr)
+            if not stderr.endswith("\n"):
+                sys.stderr.write("\n")
+        return 1
+
+    print(f"✓ Run {timestamp} ({meta['duration_s']:.2f}s)")
+    return EXIT_PASS
+
+
+def _criterion_holds(value: float, direction: str, threshold: float) -> bool:
+    if direction == "above":
+        return value > threshold
+    if direction == "below":
+        return value < threshold
+    if direction == "equals":
+        return abs(value - threshold) < _EQUALS_EPSILON
+    raise ValueError(f"unknown direction: {direction!r}")
 
 
 def cmd_verdict(args: argparse.Namespace) -> int:
-    return _stub("verdict")
+    claim_dir = FALSIFY_DIR / args.name
+    spec_path = claim_dir / "spec.yaml"
+
+    if not spec_path.exists():
+        print(
+            f"falsify verdict: {spec_path} not found — "
+            f"run `falsify init {args.name}` first.",
+            file=sys.stderr,
+        )
+        return EXIT_BAD_SPEC
+
+    run_dir = _resolve_latest_run(claim_dir)
+    if run_dir is None or not run_dir.exists():
+        print(
+            f"falsify verdict: no runs — "
+            f"run `falsify run {args.name}` first.",
+            file=sys.stderr,
+        )
+        return EXIT_BAD_SPEC
+
+    try:
+        spec = yaml.safe_load(spec_path.read_text())
+    except yaml.YAMLError as e:
+        print(f"falsify verdict: failed to parse {spec_path}: {e}", file=sys.stderr)
+        return EXIT_BAD_SPEC
+
+    metric_fn_spec = spec["experiment"]["metric_fn"]
+    if ":" not in metric_fn_spec:
+        print(
+            f"falsify verdict: metric_fn {metric_fn_spec!r} "
+            f"must be in 'module:function' form",
+            file=sys.stderr,
+        )
+        return EXIT_BAD_SPEC
+    module_name, func_name = metric_fn_spec.split(":", 1)
+
+    cwd_str = str(Path.cwd())
+    if cwd_str not in sys.path:
+        sys.path.insert(0, cwd_str)
+
+    try:
+        module = importlib.import_module(module_name)
+        fn = getattr(module, func_name)
+    except (ImportError, AttributeError) as e:
+        print(
+            f"falsify verdict: failed to load {metric_fn_spec}: {e}",
+            file=sys.stderr,
+        )
+        return EXIT_BAD_SPEC
+
+    try:
+        raw = fn(run_dir)
+    except Exception as e:
+        print(
+            f"falsify verdict: metric_fn raised {type(e).__name__}: {e}",
+            file=sys.stderr,
+        )
+        return 1
+
+    sample_size: int | None = None
+    if isinstance(raw, tuple) and len(raw) == 2:
+        value_raw, sample_size = raw
+    else:
+        value_raw = raw
+    if not isinstance(value_raw, (int, float)) or isinstance(value_raw, bool):
+        print(
+            f"falsify verdict: metric_fn must return a number "
+            f"or (number, int). Got {type(value_raw).__name__}",
+            file=sys.stderr,
+        )
+        return EXIT_BAD_SPEC
+    value = float(value_raw)
+
+    min_n = spec["falsification"]["minimum_sample_size"]
+    if sample_size is not None and sample_size < min_n:
+        print(
+            f"falsify verdict: minimum_sample_size not met "
+            f"({sample_size} < {min_n})",
+            file=sys.stderr,
+        )
+        return EXIT_BAD_SPEC
+
+    criteria = spec["falsification"]["failure_criteria"]
+    all_hold = True
+    for c in criteria:
+        if not _criterion_holds(value, c["direction"], c["threshold"]):
+            all_hold = False
+
+    head = criteria[0]
+    verdict = "PASS" if all_hold else "FAIL"
+    verdict_data = {
+        "verdict": verdict,
+        "observed_value": value,
+        "threshold": head["threshold"],
+        "direction": head["direction"],
+        "metric": head["metric"],
+        "run_ref": run_dir.name,
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+    }
+    if sample_size is not None:
+        verdict_data["sample_size"] = sample_size
+    (claim_dir / "verdict.json").write_text(
+        json.dumps(verdict_data, indent=2, sort_keys=True) + "\n"
+    )
+
+    print(f"Verdict: {verdict}")
+    print(f"  observed {head['metric']} = {value}")
+    print(f"  threshold: {head['direction']} {head['threshold']}")
+    return EXIT_PASS if all_hold else EXIT_FAIL
 
 
 def cmd_guard(args: argparse.Namespace) -> int:

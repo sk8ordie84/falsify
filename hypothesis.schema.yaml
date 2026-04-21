@@ -48,10 +48,12 @@ properties:
                 experiment's metric_fn.
             direction:
               type: string
-              enum: [above, below, equal, not_equal, at_least, at_most]
+              enum: [above, below, equals]
               description: >
-                Comparison direction. "above 0.05" means the claim is
-                falsified when the metric exceeds 0.05.
+                Direction that must hold for the claim to PASS.
+                above:  observed value must be strictly greater than threshold
+                below:  observed value must be strictly less than threshold
+                equals: |observed - threshold| must be less than 1e-9
             threshold:
               type: number
               description: Numeric threshold the metric is compared to.
