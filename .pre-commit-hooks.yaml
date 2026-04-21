@@ -1,0 +1,32 @@
+- id: falsify-guard
+  name: falsify guard (block contradicting commit messages)
+  description: >-
+    Runs `falsify guard` against the commit message to block claims
+    that contradict locked verdicts.
+  entry: falsify guard
+  language: python
+  stages: [commit-msg]
+  args: []
+  minimum_pre_commit_version: "3.0.0"
+
+- id: falsify-doctor
+  name: falsify doctor (spec health)
+  description: >-
+    Runs `falsify doctor --specs-only` to ensure all committed
+    spec.yaml files validate and match their locks.
+  entry: falsify doctor
+  language: python
+  args: [--specs-only]
+  pass_filenames: false
+  stages: [pre-commit]
+
+- id: falsify-stats
+  name: falsify stats (summary on commit)
+  description: >-
+    Prints a one-line summary of verdict states on every commit.
+    Never blocks; informational only.
+  entry: bash -c 'falsify stats | tail -1'
+  language: system
+  pass_filenames: false
+  stages: [pre-commit]
+  verbose: true

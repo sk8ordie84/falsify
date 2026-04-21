@@ -56,6 +56,23 @@ Runs the auto-demo in a clean container. See
 [docs/DOCKER.md](docs/DOCKER.md) for interactive and repo-mount
 modes.
 
+### pre-commit integration
+
+Consume falsify's hooks from your own repo:
+
+```yaml
+repos:
+  - repo: https://github.com/<USER>/falsify-hackathon
+    rev: v0.1.0
+    hooks:
+      - id: falsify-guard
+      - id: falsify-doctor
+```
+
+Then `pre-commit install && pre-commit install --hook-type commit-msg`.
+See [docs/PRE_COMMIT.md](docs/PRE_COMMIT.md) for the full list of
+exported hooks and how this repo eats its own dog food.
+
 ## Quickstart
 
 ```bash

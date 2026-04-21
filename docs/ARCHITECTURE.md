@@ -112,6 +112,14 @@ without paging.
   `claim-auditor` (on-demand). Manifests live in
   [`managed_agents/`](../managed_agents/); Console setup guide in
   [`docs/MANAGED_AGENTS.md`](MANAGED_AGENTS.md).
+- **Shipped in 0.1.0:** pre-commit framework integration. The
+  [`.pre-commit-hooks.yaml`](../.pre-commit-hooks.yaml) manifest
+  exports `falsify-guard`, `falsify-doctor`, and `falsify-stats`
+  hooks that any consumer repo can reference; our own
+  [`.pre-commit-config.yaml`](../.pre-commit-config.yaml) wires
+  them to the local working tree alongside the standard
+  pre-commit-hooks hygiene checks. Guide in
+  [`docs/PRE_COMMIT.md`](PRE_COMMIT.md).
 - Managed Agents cloud deployment for scheduled verdict refresh
   (replaces manually invoking `verdict-refresher`).
 - Git `pre-push` hook alongside the existing `commit-msg` hook —

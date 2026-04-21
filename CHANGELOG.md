@@ -41,6 +41,13 @@ numbers follow [Semantic Versioning](https://semver.org).
   Runs tests + smoke, verifies the `v*.*.*` tag matches
   `falsify.__version__`, builds sdist + wheel, publishes a GitHub
   Release with the matching `CHANGELOG` section as the body.
+- `.pre-commit-hooks.yaml` — hook manifest for consumer repos:
+  `falsify-guard` (commit-msg stage), `falsify-doctor` (pre-commit
+  stage), `falsify-stats` (informational).
+- `.pre-commit-config.yaml` — local pre-commit configuration:
+  standard hygiene hooks plus three local ones
+  (`falsify-guard-local`, `falsify-doctor-local`, `unittest-fast`).
+- `docs/PRE_COMMIT.md` — setup guide for both use cases.
 - `Dockerfile` + `.dockerignore` — reproducible demo environment
   (`docker run --rm -it falsify-demo` fires the auto-demo).
 - `docs/DOCKER.md` — quick run, interactive session, repo-mount,

@@ -28,6 +28,15 @@ By participating, you agree to uphold the Code of Conduct. See
 3. Run the full local CI suite: `make ci` (unittest + smoke + JUJU
    end-to-end + skill lint).
 4. All of those must pass before you open a PR.
+5. *(Recommended)* Install pre-commit hooks so style + guard
+   checks fire locally on every commit:
+
+       pip install pre-commit
+       pre-commit install
+       pre-commit install --hook-type commit-msg
+
+   Configuration lives in `.pre-commit-config.yaml`; see also
+   [docs/PRE_COMMIT.md](docs/PRE_COMMIT.md).
 
 ## Branching and commits
 

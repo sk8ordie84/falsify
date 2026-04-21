@@ -1,0 +1,36 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.md$'
+      - id: end-of-file-fixer
+      - id: check-yaml
+        exclude: '^managed_agents/'
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: check-merge-conflict
+
+  - repo: local
+    hooks:
+      - id: falsify-guard-local
+        name: falsify guard (local)
+        entry: python3 falsify.py guard
+        language: system
+        stages: [commit-msg]
+        pass_filenames: false
+
+      - id: falsify-doctor-local
+        name: falsify doctor (local)
+        entry: python3 falsify.py doctor --specs-only
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: unittest-fast
+        name: unittest (fast subset)
+        entry: python3 -m unittest tests.test_lock tests.test_run tests.test_verdict -v
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
