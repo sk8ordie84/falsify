@@ -107,11 +107,15 @@ without paging.
 ## Extension points
 
 - **Shipped in 0.1.0 (optional install):** MCP server exposing
-  `verdict.json` as a Claude-tool resource so verdicts are
-  queryable across sessions and other Claude surfaces. See
-  [`mcp_server/`](../mcp_server/) — the four tool functions are
-  implemented; the `stdio_server` SDK adapter is scaffolded for
-  0.2.0. Install with `pip install -e '.[mcp]'`.
+  the verdict store. Four tools (`list_verdicts`, `get_verdict`,
+  `get_stats`, `check_claim`) and three resource URIs
+  (`falsify://verdicts`, `falsify://verdicts/<claim>`,
+  `falsify://stats`) wired through the real `mcp.server.Server`
+  SDK with decorator-style handlers. The SDK import is lazy —
+  module loads without `mcp` so the plain tool functions remain
+  importable for unit tests; only `main()` exits 2 when the SDK is
+  absent. Install with `pip install -e '.[mcp]'`. Run via
+  `python -m mcp_server`. See [`mcp_server/`](../mcp_server/).
 - **Shipped in 0.1.0 (manifests) / active in 0.2.0:** Managed
   Agents deployment for `verdict-refresher` (scheduled) and
   `claim-auditor` (on-demand). Manifests live in

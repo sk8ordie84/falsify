@@ -152,19 +152,23 @@ and a skill-lint pass over every SKILL.md and agent file.
 ## MCP integration
 
 Expose the verdict store to Claude Desktop / Claude Code via
-Model Context Protocol. Install the optional extra:
+Model Context Protocol with four read-only tools (`list_verdicts`,
+`get_verdict`, `get_stats`, `check_claim`) and three resource URIs.
 
 ```bash
 pip install -e '.[mcp]'
+python -m mcp_server   # speaks MCP over stdio
 ```
 
 Then merge the snippet in
 [`mcp_server/claude_desktop_config.example.json`](mcp_server/claude_desktop_config.example.json)
 into your Claude Desktop config, pointing `cwd` at your local
-clone. Claude can now query verdicts, stats, and run claim-audits
-against the log without shelling out. See
-[`mcp_server/README.md`](mcp_server/README.md) for the exposed
-resources and tool signatures.
+clone. Every Claude session in your org can now query live
+verdicts — no more *"I think the latency claim still passes"*;
+Claude just asks the MCP server. Falsify itself runs without the
+SDK; if `mcp` isn't installed, `python -m mcp_server` exits 2 with
+a clear install hint. Full surface in
+[`mcp_server/README.md`](mcp_server/README.md).
 
 ### Managed Agents (optional)
 

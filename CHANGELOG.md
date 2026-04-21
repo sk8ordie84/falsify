@@ -6,6 +6,18 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+### Changed
+
+- `mcp_server/` upgraded from stub to real MCP-SDK implementation.
+  Four tools (`list_verdicts`, `get_verdict`, `get_stats`,
+  `check_claim`) and three resource URIs (`falsify://verdicts`,
+  `falsify://verdicts/<claim>`, `falsify://stats`) registered via
+  the `mcp.server.Server` decorators. Lazy SDK import — module
+  loads cleanly without `mcp`; `python -m mcp_server` exits 2 with
+  a clear hint when the SDK is missing. Plain helpers stay
+  importable as `from mcp_server import list_verdicts, ...`.
+  Optional install bumped to `mcp>=1.0.0`.
+
 ### Added
 
 - `pyproject.toml` — installable as `pip install .` with a

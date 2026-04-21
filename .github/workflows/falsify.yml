@@ -47,10 +47,10 @@ jobs:
           python-version: "3.12"
 
       - name: Install core + mcp extra
-        run: pip install pyyaml mcp
+        run: pip install -e ".[mcp]"
 
-      - name: Run MCP server tests only
-        run: python -m unittest tests.test_mcp_server -v
+      - name: Run MCP tests
+        run: python -m unittest tests.test_mcp tests.test_mcp_server -v
 
   skill-lint:
     runs-on: ubuntu-latest

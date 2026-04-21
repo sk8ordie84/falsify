@@ -1,86 +1,82 @@
 # falsify MCP server
 
 A Model Context Protocol server that exposes the Falsification
-Engine's verdict store to any MCP-compatible client — Claude
-Desktop, Claude Code, or a custom integration.
+Engine verdict store to any MCP-compatible client — Claude
+Desktop, Claude Code, custom integrations.
 
-**READ-ONLY.** The server surfaces verdicts, spec locks, and
-aggregate stats. It does not write to disk. Refreshing verdicts is
-the `verdict-refresher` subagent's job, not this server's.
+**READ-ONLY.** Surfaces verdicts, claim status, and aggregate
+stats. Never writes to disk.
 
 ## Install
 
-The MCP SDK is an optional dependency. Install the extra:
-
 ```bash
-pip install -e '.[mcp]'
+pip install -e ".[mcp]"
 ```
 
-This pulls in `mcp>=0.9.0` alongside the core `falsify` package.
+This pulls in `mcp>=1.0.0` alongside the core `falsify` package.
+The MCP SDK is an *optional* extra; falsify itself works without
+it.
+
+## Run standalone
+
+```bash
+python -m mcp_server
+```
+
+Speaks MCP over stdio. Pipe it to a client, or wire it up via
+Claude Desktop config below.
 
 ## Wire into Claude Desktop
 
-Merge the snippet in
+Merge the snippet from
 [`claude_desktop_config.example.json`](claude_desktop_config.example.json)
-into your Claude Desktop config, typically at:
+into your Claude Desktop config:
 
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Linux: `~/.config/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
-Update the `cwd` path to point at your local clone of this repo.
-Restart Claude Desktop; `falsify-verdict-log` will appear in the
+Update `cwd` to point at your local clone of this repo, then
+restart Claude Desktop. `falsify-verdict-log` will appear in the
 MCP servers panel.
 
-## Exposed resources
+## Tools
 
-| URI                           | Body                                         |
-|-------------------------------|----------------------------------------------|
-| `falsify://verdicts`          | list of all verdict.json contents            |
-| `falsify://verdicts/<name>`   | one claim's verdict.json                     |
-| `falsify://specs/<name>`      | one claim's spec.lock.json                   |
-| `falsify://stats`             | aggregate summary (PASS/FAIL/STALE counts)   |
+| Tool            | Args                       | Returns                                                     |
+|-----------------|----------------------------|-------------------------------------------------------------|
+| `list_verdicts` | none                       | `[{name, state, metric_value, sample_size, last_run_timestamp}, ...]` |
+| `get_verdict`   | `claim_name: str`          | the full `verdict.json` payload, or `{"error": "not found"}` |
+| `get_stats`     | none                       | `{total, pass, fail, inconclusive, stale, unrun}`           |
+| `check_claim`   | `claim_name: str`          | `{locked: bool, hash: str | null, latest_run: dict | null}` |
 
-## Exposed tools
+## Resources
 
-| Tool            | Signature                     | Returns                                 |
-|-----------------|-------------------------------|-----------------------------------------|
-| `list_verdicts` | `()`                          | `[{name, state, metric, threshold, last_run}, ...]` |
-| `get_verdict`   | `(name: str)`                 | the full verdict.json                   |
-| `get_stats`     | `()`                          | `{total, PASS, FAIL, INCONCLUSIVE, STALE, UNRUN}` |
-| `check_claim`   | `(text: str)`                 | `{matches, contradictions, affirmative_detected}` |
+| URI                           | Body                                        |
+|-------------------------------|---------------------------------------------|
+| `falsify://verdicts`          | JSON list of every claim's verdict row      |
+| `falsify://verdicts/<claim>`  | one claim's verdict.json                    |
+| `falsify://stats`             | aggregate counts                            |
 
-## Example transcripts
+## Graceful fallback
 
-> **User:** what's the latest verdict for juju?
->
-> **Claude** *(calls get_verdict("juju"))* → `{"verdict": "PASS", "observed_value": 0.214, "threshold": 0.25, ...}`
->
-> It passed — brier 0.214 is below the 0.25 threshold, checked
-> yesterday.
+If the `mcp` package isn't installed, `python -m mcp_server` exits
+with a clear message:
 
-> **User:** does this PR description contradict anything we've
-> locked?
->
-> **Claude** *(calls check_claim(pr_body))* → `{"contradictions": [{"name": "retrieval-recall", "state": "FAIL", ...}]}`
->
-> Yes — the PR says "retrieval recall confirmed above 85%", but
-> `retrieval-recall`'s last verdict is FAIL. Block or re-run.
+> MCP SDK not installed. Install with: pip install -e '.[mcp]'
+
+The four tool functions stay importable as plain Python:
+
+```python
+from mcp_server import list_verdicts, get_stats
+print(list_verdicts())
+```
+
+So unit tests and ad-hoc scripts can use them without the SDK.
 
 ## Non-goals
 
 - **No writes.** The server will never call `lock`, `run`, or
-  modify `verdict.json`. If you need a fresh verdict, run the CLI
-  or invoke the `verdict-refresher` subagent.
-- **No network fetch.** The server only reads the local
-  `.falsify/` directory. Remote artifact backends (S3, GCS) are on
-  the 0.2.x roadmap.
-
-## Status
-
-Scaffolded in 0.1.0 (April 2026). The MCP SDK wiring is stubbed —
-the four tool functions are fully implemented in Python and
-importable (`from mcp_server.server import list_verdicts`), but
-the `stdio_server` adapter raises `NotImplementedError` until the
-SDK version is pinned. Track progress in
-[ROADMAP.md](../ROADMAP.md) under the 0.2.0 target.
+  modify `verdict.json`. Verdict refresh is the
+  `verdict-refresher` subagent's job.
+- **No remote artifact backends.** S3/GCS sync is on the 0.2.x
+  roadmap — see [`../ROADMAP.md`](../ROADMAP.md).

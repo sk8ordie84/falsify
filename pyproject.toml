@@ -33,7 +33,7 @@ Issues = "https://github.com/<USER>/falsify-hackathon/issues"
 Changelog = "https://github.com/<USER>/falsify-hackathon/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-mcp = ["mcp>=0.9.0"]
+mcp = ["mcp>=1.0.0"]
 
 [project.scripts]
 falsify = "falsify:main"

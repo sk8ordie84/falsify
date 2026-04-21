@@ -1,9 +1,12 @@
 {
   "mcpServers": {
     "falsify-verdict-log": {
-      "command": "python3",
-      "args": ["-m", "mcp_server.server"],
-      "cwd": "/absolute/path/to/your/falsify-repo"
+      "command": "python",
+      "args": ["-m", "mcp_server"],
+      "cwd": "/absolute/path/to/your/falsify-repo",
+      "env": {
+        "FALSIFY_DIR": ".falsify"
+      }
     }
   }
 }
