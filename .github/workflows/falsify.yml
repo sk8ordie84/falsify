@@ -1,0 +1,96 @@
+name: falsify CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Run unittest suite
+        run: python -m unittest discover tests -v
+
+      - name: Run end-to-end smoke test
+        run: bash tests/smoke_test.sh
+
+      - name: Run JUJU sample end-to-end
+        run: |
+          mkdir -p .falsify/juju
+          cp examples/juju_sample/spec.yaml .falsify/juju/spec.yaml
+          python3 falsify.py lock juju
+          python3 falsify.py run juju
+          python3 falsify.py verdict juju
+
+      - name: Guard self-check (text mode, no violations expected)
+        run: python3 falsify.py guard "brier score below 0.25 holds"
+
+  skill-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pyyaml
+        run: pip install pyyaml
+
+      - name: Validate skill and agent frontmatter
+        run: |
+          python3 - <<'PY'
+          import sys
+          from pathlib import Path
+          import yaml
+
+          paths = sorted(
+              list(Path(".claude/skills").rglob("SKILL.md"))
+              + list(Path(".claude/agents").glob("*.md"))
+          )
+          if not paths:
+              print("No skill or agent files found under .claude/")
+              sys.exit(1)
+
+          failed = []
+          for p in paths:
+              text = p.read_text()
+              if not text.startswith("---\n"):
+                  failed.append((p, "missing '---' frontmatter header"))
+                  continue
+              end = text.find("\n---\n", 4)
+              if end < 0:
+                  failed.append((p, "frontmatter has no closing '---'"))
+                  continue
+              try:
+                  fm = yaml.safe_load(text[4:end])
+              except yaml.YAMLError as e:
+                  failed.append((p, f"YAML parse error: {e}"))
+                  continue
+              if not isinstance(fm, dict):
+                  failed.append((p, "frontmatter is not a mapping"))
+                  continue
+              for required in ("name", "description"):
+                  if required not in fm:
+                      failed.append((p, f"missing required key: {required!r}"))
+
+          if failed:
+              print("Skill / agent lint failed:")
+              for p, reason in failed:
+                  print(f"  - {p}: {reason}")
+              sys.exit(1)
+          print(f"OK — {len(paths)} skill/agent file(s) validated:")
+          for p in paths:
+              print(f"  - {p}")
+          PY

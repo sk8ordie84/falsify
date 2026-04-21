@@ -1,5 +1,7 @@
 # Falsification Engine
 
+<!-- add CI badge after repo push: ![CI](https://github.com/<user>/<repo>/actions/workflows/falsify.yml/badge.svg) -->
+
 **Pre-registration + CI for AI-agent claims.**
 
 AI agents — and the humans who prompt them — are fluent at making claims
