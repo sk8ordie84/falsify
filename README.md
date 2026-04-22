@@ -352,6 +352,9 @@ of invariant breaks, see [.github/SECURITY.md](.github/SECURITY.md).
 MIT. See [LICENSE](LICENSE).
 
 See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community standards.
+See [.github/CODEOWNERS](.github/CODEOWNERS) for module-level
+reviewers and [.github/dependabot.yml](.github/dependabot.yml) for
+automated dependency updates.
 
 ## Built with
 

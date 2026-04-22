@@ -1,0 +1,10 @@
+# Default owner for everything in the repo
+* @<USER>
+
+# Core CLI and spec schema require extra scrutiny
+/falsify.py            @<USER>
+/hypothesis.schema.yaml @<USER>
+/scripts/release_check.py @<USER>
+
+# Docs can be reviewed more liberally — but keep owner as default
+/docs/                 @<USER>

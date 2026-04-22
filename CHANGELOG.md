@@ -32,6 +32,10 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ### Added
 
+- `.gitignore` rules for run artifacts
+  (`.falsify/*/latest_run`, `verdict.json`, `runs/`);
+  `.github/CODEOWNERS`, `FUNDING.yml`, `dependabot.yml` for
+  GitHub repo maturity.
 - `tests/test_integration_e2e.py` — single end-to-end lifecycle
   test with 18 stages covering init, lock, run, verdict, stats,
   trend, why, score, export, verify, replay, tampering detection,
