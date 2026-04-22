@@ -116,7 +116,10 @@ class BenchCliSmokeTests(unittest.TestCase):
         self.assertIn("--warmup", r.stdout)
 
     def test_bench_cli_small_run(self) -> None:
-        r = self._run("--runs", "1", "--warmup", "0", "--commands", "--help")
+        # NOTE: `--commands=--help` (equals form) is required because
+        # argparse otherwise treats the bare `--help` token as the
+        # built-in help flag and refuses it as a value for --commands.
+        r = self._run("--runs", "1", "--warmup", "0", "--commands=--help")
         self.assertEqual(r.returncode, 0, msg=r.stderr)
         self.assertTrue(
             "median" in r.stdout or "--help" in r.stdout,
@@ -126,7 +129,7 @@ class BenchCliSmokeTests(unittest.TestCase):
     def test_bench_invalid_command_surfaces_error(self) -> None:
         r = self._run(
             "--runs", "1", "--warmup", "0",
-            "--commands", "nonexistent_subcommand",
+            "--commands=nonexistent_subcommand",
         )
         self.assertNotEqual(
             r.returncode, 0,
@@ -137,7 +140,7 @@ class BenchCliSmokeTests(unittest.TestCase):
     def test_bench_json_shape(self) -> None:
         r = self._run(
             "--runs", "1", "--warmup", "0",
-            "--commands", "--help", "--json",
+            "--commands=--help", "--json",
         )
         self.assertEqual(r.returncode, 0, msg=r.stderr)
         payload = json.loads(r.stdout)
@@ -149,7 +152,7 @@ class BenchCliSmokeTests(unittest.TestCase):
     def test_bench_runs_cap(self) -> None:
         r = self._run(
             "--runs", "9999", "--warmup", "0",
-            "--commands", "--help", "--json",
+            "--commands=--help", "--json",
         )
         # Acceptable shapes: either the command rejects absurd counts
         # (exit 2) or it silently caps to <=100 samples.
@@ -167,7 +170,7 @@ class BenchCliSmokeTests(unittest.TestCase):
         # With --warmup 0, samples_ms should equal --runs.
         r = self._run(
             "--runs", "2", "--warmup", "0",
-            "--commands", "--help", "--json",
+            "--commands=--help", "--json",
         )
         self.assertEqual(r.returncode, 0, msg=r.stderr)
         payload = json.loads(r.stdout)
@@ -180,7 +183,7 @@ class BenchCliSmokeTests(unittest.TestCase):
         # With --warmup 1, samples_ms still equals --runs (warmup not counted).
         r2 = self._run(
             "--runs", "2", "--warmup", "1",
-            "--commands", "--help", "--json",
+            "--commands=--help", "--json",
         )
         self.assertEqual(r2.returncode, 0, msg=r2.stderr)
         payload2 = json.loads(r2.stdout)

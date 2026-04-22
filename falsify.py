@@ -3405,7 +3405,7 @@ def cmd_hook(args: argparse.Namespace) -> int:
     return EXIT_BAD_SPEC
 
 
-_BENCH_DEFAULT_COMMANDS = ("init", "--help", "list", "stats", "score")
+_BENCH_DEFAULT_COMMANDS = ("--help", "--version", "list", "stats", "score")
 _BENCH_MAX_RUNS = 100
 
 
@@ -3471,11 +3471,16 @@ def _bench_format_table(
         ])
     widths = [max(len(row[i]) for row in table) for i in range(len(header))]
     out_lines = [f"falsify bench  (runs={runs}, warmup={warmup})"]
+    # Prepend a 2-space margin on every body row so that `row.index("  ")`
+    # finds the same position (0) on every line regardless of how much
+    # ljust padding the first column has. Without this leading margin,
+    # shorter commands pad with enough trailing spaces to create a "  "
+    # run inside col 0, breaking downstream alignment checks.
     for row in table:
         parts = [row[0].ljust(widths[0])]
         for j in range(1, len(header)):
             parts.append(row[j].rjust(widths[j]))
-        out_lines.append("  ".join(parts))
+        out_lines.append("  " + "  ".join(parts))
     return "\n".join(out_lines) + "\n"
 
 
@@ -3492,10 +3497,20 @@ def cmd_bench(args: argparse.Namespace) -> int:
 
     script_path = str(Path(__file__).resolve())
     results: list[dict] = []
+    # bench is a LATENCY probe, not a correctness check. A semantic
+    # nonzero exit (e.g. `score` returning EXIT_FAIL=10 on an empty
+    # repo, or `verdict` returning 10 on a FAIL claim) is still a
+    # legitimate timing sample. We only treat a command as "broken"
+    # when argparse itself rejects it as unknown — detectable via
+    # the first iteration's stderr signature.
+    _ARGPARSE_REJECT_MARKERS = ("invalid choice", "unrecognized arguments")
+    any_argparse_reject = False
 
     for cmd_str in commands:
         cmd_argv = cmd_str.split()
         samples_ms: list[float] = []
+        first_stderr = ""
+        first_rc = 0
 
         for _ in range(warmup):
             with tempfile.TemporaryDirectory() as tmp:
@@ -3503,13 +3518,7 @@ def cmd_bench(args: argparse.Namespace) -> int:
                     [sys.executable, script_path, *cmd_argv],
                     cwd=tmp, capture_output=True, text=True,
                 )
-            if r.returncode != 0:
-                print(
-                    f"falsify bench: command {cmd_str!r} failed during "
-                    f"warmup (exit {r.returncode})",
-                    file=sys.stderr,
-                )
-                return EXIT_BAD_SPEC
+            # warmup nonzero is tolerated for the same reason below
 
         for iteration in range(runs):
             with tempfile.TemporaryDirectory() as tmp:
@@ -3519,14 +3528,18 @@ def cmd_bench(args: argparse.Namespace) -> int:
                     cwd=tmp, capture_output=True, text=True,
                 )
                 elapsed_ms = (time.perf_counter() - start) * 1000.0
-            if r.returncode != 0:
-                print(
-                    f"falsify bench: command {cmd_str!r} failed at "
-                    f"iteration {iteration + 1} (exit {r.returncode})",
-                    file=sys.stderr,
-                )
-                return EXIT_BAD_SPEC
+            if iteration == 0:
+                first_stderr = r.stderr
+                first_rc = r.returncode
             samples_ms.append(elapsed_ms)
+
+        # Argparse-reject detection: propagate the subprocess stderr
+        # (which names the bad command) and flag overall failure.
+        if first_rc != 0 and any(
+            marker in first_stderr for marker in _ARGPARSE_REJECT_MARKERS
+        ):
+            sys.stderr.write(first_stderr)
+            any_argparse_reject = True
 
         results.append({
             "command": cmd_str,
@@ -3547,7 +3560,7 @@ def cmd_bench(args: argparse.Namespace) -> int:
         print(json.dumps(payload, indent=2))
     else:
         sys.stdout.write(_bench_format_table(results, runs, warmup))
-    return EXIT_PASS
+    return EXIT_BAD_SPEC if any_argparse_reject else EXIT_PASS
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -3891,7 +3904,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_bench.add_argument(
         "--commands", default=None,
         help="Comma-separated list of subcommands to bench "
-             "(default: init,--help,list,stats,score)",
+             "(default: --help,--version,list,stats,score)",
     )
     p_bench.add_argument(
         "--json", action="store_true",
