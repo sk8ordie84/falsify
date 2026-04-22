@@ -54,8 +54,8 @@ pre-registration looks like when AI writes the experiments.
 
 ## Scope delivered
 
-- 59 commits, 2 days of pair-programming with Claude Opus 4.7.
-- 454 tests across 58 files, all passing. 10 intentionally
+- 73 commits, 2 days of pair-programming with Claude Opus 4.7.
+- 515 tests across 58 files, all passing. 10 intentionally
   skipped (MCP SDK gated + Python 3.11-only pyproject parity).
 - 17 CLI subcommands — init, lock, run, verdict, guard, list,
   stats, diff, hook, doctor, version, export, verify, replay,
@@ -171,7 +171,7 @@ contract (sealed before the fact).
 ## Built with Opus 4.7
 
 Every line of code in this repo was written with Claude Opus 4.7
-via Claude Code over 2 days of pair-programming. 59 commits, 454
+via Claude Code over 2 days of pair-programming. 73 commits, 515
 tests, one-shot composition of a CLI, a forked-context subagent
 layer, an MCP server, and a full documentation set. The
 development loop itself was a demonstration of what this project
