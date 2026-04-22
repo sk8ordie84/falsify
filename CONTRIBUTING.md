@@ -4,6 +4,10 @@ Thanks for the interest. This project lives or dies by the trust in
 its verdicts, so contributions need to keep the determinism contract
 intact.
 
+Contributors using Claude Code should also read
+[CLAUDE.md](CLAUDE.md) — it encodes the repo's prime directive and
+development rules.
+
 ## Code of conduct
 
 By participating, you agree to uphold the Code of Conduct. See

@@ -7,6 +7,8 @@
 
 **Current version: 0.1.0** — run `python3 falsify.py --version`.
 
+Working on this repo with Claude Code? See [CLAUDE.md](CLAUDE.md).
+
 ## Honesty score
 
 Single-number rubric across every claim in your repo:

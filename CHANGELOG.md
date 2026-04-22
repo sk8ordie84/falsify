@@ -20,6 +20,9 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ### Added
 
+- `CLAUDE.md` — project instructions for Claude Code users,
+  encoding the prime directive, file layout, skills/subagents, and
+  non-negotiable development rules.
 - `pyproject.toml` — installable as `pip install .` with a
   `falsify` console entry point (`falsify:main`).
 - `ROADMAP.md` — post-hackathon direction (0.2.0 MCP + Managed
