@@ -88,6 +88,9 @@ numbers follow [Semantic Versioning](https://semver.org).
   `improving` / `degrading` / `flat` / `mixed` classifier based
   on first-third vs last-third means. Flags: `--last N` (cap 200),
   `--width`, `--ascii`, `--json`.
+- `docs/ADVERSARIAL.md` — threat model enumerating 8 defended and
+  6 undefended attack classes with mitigations. Linked from
+  README, SECURITY, and SUBMISSION.
 - Claude skill `claim-review` — reviews PR diffs for unlocked
   specs, silent threshold edits, and broken `metric_fn`
   references. Runs in PR CI, exits `1` on any CRITICAL finding.

@@ -28,6 +28,10 @@ reproducible from what's on disk.
 
 ## Core invariants
 
+For the adversarial reasoning behind each invariant below — which
+attack class it prevents, which exit code surfaces a violation —
+see [ADVERSARIAL.md](ADVERSARIAL.md).
+
 - **Canonical YAML + SHA-256** → the same logical spec always hashes
   to the same 64 hex characters across machines and OSes.
 - **The verdict is a pure function** of `(spec.lock.json, run

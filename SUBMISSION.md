@@ -57,6 +57,12 @@ before submission.
 
 Placeholder: `<YouTube or Vimeo URL>` — replace Friday after upload.
 
+## Trust model
+
+We document a serious threat model in
+[`docs/ADVERSARIAL.md`](docs/ADVERSARIAL.md) — 8 defended attacks,
+6 explicitly undefended. We earn trust by stating limits.
+
 ## License
 
 MIT — new work, not derived from prior projects.

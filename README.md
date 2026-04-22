@@ -310,6 +310,14 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 See [ROADMAP.md](ROADMAP.md) for the post-hackathon direction.
 
+## Trust model
+
+Falsify is a discipline tool, not a zero-trust system. For a full
+enumeration of attacks defended and NOT defended, with the exact
+exit code or command that catches each, see
+[docs/ADVERSARIAL.md](docs/ADVERSARIAL.md). For private disclosure
+of invariant breaks, see [.github/SECURITY.md](.github/SECURITY.md).
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

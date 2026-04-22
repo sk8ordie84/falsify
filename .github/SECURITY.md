@@ -40,3 +40,10 @@ bug report or feature request instead.
 
 Disclosed issues are credited in `CHANGELOG.md` under the release
 that fixes them, unless the reporter requests otherwise.
+
+## Full threat model
+
+For the complete enumeration of attacks falsify defends against,
+attacks it explicitly does NOT defend against, and the mitigations
+for each, see
+[`docs/ADVERSARIAL.md`](../docs/ADVERSARIAL.md).
