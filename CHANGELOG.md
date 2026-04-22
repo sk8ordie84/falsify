@@ -32,6 +32,10 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ### Added
 
+- `tests/test_integration_e2e.py` — single end-to-end lifecycle
+  test with 18 stages covering init, lock, run, verdict, stats,
+  trend, why, score, export, verify, replay, tampering detection,
+  honest relock, and stale detection.
 - `scripts/release_check.py` and `make release-check` — 12-gate
   pre-release validator covering version consistency, CHANGELOG,
   placeholders, tests, smoke, dogfood, docs, Claude surface,
