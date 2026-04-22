@@ -7,6 +7,14 @@
 Developer Tools / AI Infrastructure — Anthropic "Built with Opus
 4.7" hackathon, April 21–26 2026.
 
+## Written summary (paste into submission form, 187 words)
+
+Every week another AI product claims a metric — "94% accuracy", "sub-200ms p95", "3% hallucination rate" — that quietly evaporates under scrutiny. The claim was never falsifiable. Nobody locked the metric, the threshold, or the dataset before the experiment ran, so when the number changes nobody can say whether the model regressed, the data drifted, or the bar just got silently lowered.
+
+Falsify is a single-file Python CLI that applies scientific pre-registration to AI claims. `falsify lock` SHA-256 hashes a canonical YAML spec — metric, threshold, direction, dataset, metric-function reference — before the experiment runs. Any silent edit afterward changes the hash; the next run exits 3 and CI refuses to produce a verdict. The honest path is `lock --force`, which writes a new audit entry. Deterministic exit codes are the API: 0 PASS, 10 FAIL, 3 tampered, 11 guard violation.
+
+Built with Claude Opus 4.7 via Claude Code over two days: five skills, two forked-context subagents, three slash commands, one MCP server, 515 passing tests, and three self-dogfooded claims that re-verify falsify's own honesty on every CI run.
+
 ## The problem
 
 AI teams ship claims — "our model hits 92% accuracy", "p95
