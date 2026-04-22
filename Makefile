@@ -1,4 +1,4 @@
-.PHONY: help install test smoke ci demo demo-script doctor clean lint-skills version docker-build docker-run dogfood self-status
+.PHONY: help install test smoke ci demo demo-script doctor clean lint-skills version docker-build docker-run dogfood self-status release-check
 
 help:
 	@echo "Falsification Engine — common targets"
@@ -16,6 +16,7 @@ help:
 	@echo "  make docker-run   — run the auto-demo in a container"
 	@echo "  make dogfood      — re-run the three self-claims (cli_startup, test_coverage_count, claude_surface)"
 	@echo "  make self-status  — print `falsify why` for each self-claim"
+	@echo "  make release-check — 12-gate pre-release validator (run before tagging)"
 
 install:
 	pip install pyyaml
@@ -73,3 +74,6 @@ self-status:
 		python3 falsify.py why $$claim; \
 		echo ""; \
 	done
+
+release-check:
+	python3 scripts/release_check.py --all

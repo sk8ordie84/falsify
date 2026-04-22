@@ -126,16 +126,25 @@ they break the core guarantee and deserve a coordinated fix.
    enforces this).
 2. Update `CHANGELOG.md` — move items from `[Unreleased]` into a
    new `## [X.Y.Z] — YYYY-MM-DD` section with today's date.
-3. Commit the version bump, then tag and push:
+3. Before pushing a tag, run:
+
+       make release-check
+
+   Expected output ends with `Ready to tag and push.` If any gate
+   FAILs, fix before tagging. WARN gates (typically placeholder
+   scans on `<USER>` / `<VIDEO_URL>`, or a dirty working tree)
+   require human judgment — read the message and decide whether
+   to proceed.
+4. Commit the version bump, then tag and push:
 
        git tag vX.Y.Z
        git push origin main --tags
 
-4. `.github/workflows/release.yml` fires on the tag push. It runs
+5. `.github/workflows/release.yml` fires on the tag push. It runs
    the unittest suite + smoke test, verifies the tag matches the
    code's `__version__`, builds sdist + wheel, and creates the
    GitHub Release with the matching CHANGELOG section as the body.
-5. Verify the Release page on GitHub once the workflow finishes.
+6. Verify the Release page on GitHub once the workflow finishes.
    If the workflow failed, fix forward — delete the tag locally
    and remotely, fix the issue, re-tag, re-push.
 

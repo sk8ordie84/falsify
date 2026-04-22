@@ -32,6 +32,10 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ### Added
 
+- `scripts/release_check.py` and `make release-check` — 12-gate
+  pre-release validator covering version consistency, CHANGELOG,
+  placeholders, tests, smoke, dogfood, docs, Claude surface,
+  installability, git cleanliness, and self-integrity.
 - Self-dogfooding — three locked claims (`cli_startup`,
   `test_coverage_count`, `claude_surface`) verify falsify's own
   properties; `make dogfood` re-runs them; CI gates on them.
