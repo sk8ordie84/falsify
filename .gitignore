@@ -66,3 +66,8 @@ Thumbs.db
 
 # Git hook backups created by `falsify hook install`
 .git/hooks/commit-msg.bak.*
+
+# Demo recording venv + asciinema backups
+.venv-demo/
+.venv/
+*.cast.bak
