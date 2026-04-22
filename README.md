@@ -1,35 +1,56 @@
-# Falsification Engine
+# Falsify
 
-> **Git for AI honesty.** Lock the claim before the data — or it
-> didn't happen.
+> **Pre-registration + CI for AI-agent claims.** Lock the claim and threshold with SHA-256 *before* running the experiment — or the result doesn't count.
 
-<!-- ![CI](https://github.com/<user>/<repo>/actions/workflows/falsify.yml/badge.svg) ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg) -->
+![CI](https://github.com/<USER>/falsify/actions/workflows/falsify.yml/badge.svg)
+![coverage](https://img.shields.io/badge/tests-505%20passing-brightgreen)
+![honesty](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/<USER>/falsify/main/.falsify/badge.json)
+![python](https://img.shields.io/badge/python-3.10%2B-blue)
+![license](https://img.shields.io/badge/license-MIT-blue.svg)
 
-**Current version: 0.1.0** — run `python3 falsify.py --version`.
+---
 
-Working on this repo with Claude Code? See [CLAUDE.md](CLAUDE.md).
+## The problem
 
-## Honesty score
+Your team claims the model hits **94% accuracy**. You ship it. Three weeks later a customer proves the real number is **71%**.
 
-Single-number rubric across every claim in your repo:
+The claim was never *falsifiable*. Nobody wrote down — cryptographically, before the experiment ran — what "94%" meant, which dataset, which metric, which threshold. So when the number changed, nobody could say whether the claim was wrong, the data drifted, or the metric got silently relaxed.
 
-```bash
-falsify score
-```
+**Falsify fixes this with a single idea from science:** you must pre-register the claim *before* you run the experiment. If you change the spec after seeing the data, the hash changes, the audit trail breaks, and CI fails with exit code 3.
 
-Live shields.io badge for your README — run in CI:
+    $ falsify lock accuracy_claim        # SHA-256 the spec
+    $ falsify run  accuracy_claim        # reproducible experiment
+    $ falsify verdict accuracy_claim     # exit 0 = PASS, 10 = FAIL, 3 = tampered
 
-```bash
-falsify score --format shields --output .falsify/badge.json
-```
+Deterministic exit codes are the API. CI gates on them. Humans read the audit trail. The claim either survives contact with the data or it doesn't.
 
-```markdown
-![honesty](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/<USER>/<REPO>/main/.falsify/badge.json)
-```
+---
 
-Also emits `--format json` (for CI gating) and `--format svg`
-(self-contained badge file). Default exits `10` only when status
-is `fail`; `warn` is silent unless `--strict`.
+## 30-second demo
+
+![falsify demo](docs/assets/hero.gif)
+
+*(Lock a claim, run it, watch it PASS. Then tamper with the threshold and watch CI refuse to run.)*
+
+---
+
+## Why this matters
+
+Every week another paper, blog post, or product launch claims an AI metric that quietly evaporates under scrutiny. It's not usually malice — it's that the claim was never structured to be falsifiable. Falsify is the smallest possible tool that forces that structure.
+
+- **ML teams** — gate deploys on pre-registered accuracy / NDCG / recall
+- **DevOps** — treat p95 latency claims the same way you treat tests
+- **LLM pipelines** — pin prompt + eval + threshold so "it works" means something
+- **Research** — replicate a paper by running its spec.lock.json
+
+See [docs/CASE_STUDIES.md](docs/CASE_STUDIES.md) for three concrete adoption stories.
+
+---
+
+**Current version:** 0.1.0 — run `python3 falsify.py --version`.
+**Working with Claude Code?** See [CLAUDE.md](CLAUDE.md).
+
+---
 
 ## Why
 
