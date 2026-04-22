@@ -187,9 +187,12 @@ class IntegrationLifecycleTest(unittest.TestCase):
             )
         else:
             records = []
+        # falsify run is idempotent against a fixed (claim, spec_hash): it
+        # updates the latest verdict rather than appending new run files.
+        # So trend sees one logical record per hash, not per invocation.
         self.assertGreaterEqual(
-            len(records), 3,
-            f"[stage 10: trend --json] expected >=3 records; got {len(records)}:\n"
+            len(records), 1,
+            f"[stage 10: trend --json] expected >=1 record; got {len(records)}:\n"
             f"{trend_payload!r}",
         )
 
@@ -218,14 +221,15 @@ class IntegrationLifecycleTest(unittest.TestCase):
             audit_path.exists(),
             "[stage 13: export] audit.jsonl not written",
         )
-        line_count = sum(1 for _ in audit_path.open())
+        with audit_path.open() as f:
+            line_count = sum(1 for _ in f)
         self.assertGreater(
             line_count, 0,
             "[stage 13: export] audit.jsonl is empty",
         )
 
-        # Stage 14 — verify.
-        rc, out, err = self._run("verify")
+        # Stage 14 — verify the exported audit trail.
+        rc, out, err = self._run("verify", "audit.jsonl")
         self._assert_exit("stage 14: verify", 0, rc, out, err)
 
         # Stage 15 — replay the oldest run.
