@@ -8,6 +8,9 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ### Documentation
 
+- `SUBMISSION.md` rewritten with current scope numbers, sharper
+  pitch, money-shot walkthrough, and an explicit known-gaps
+  section.
 - `docs/DEMO_SCRIPT.md` — 90-second demo video storyboard with
   TTS-ready voiceover, shot-by-shot terminal commands, and SRT
   captions.

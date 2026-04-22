@@ -1,105 +1,187 @@
-# Submission — Falsification Engine
+# falsify — Git for AI honesty
 
-## Project name
+> Lock the claim before the data, or it didn't happen.
 
-Falsification Engine
+## Category
 
-## One-line tagline
+Developer Tools / AI Infrastructure — Anthropic "Built with Opus
+4.7" hackathon, April 21–26 2026.
 
-Pre-registration and CI for AI-agent claims — deterministic PASS or
-FAIL, not a story.
+## The problem
 
-## Short description (submission form)
+AI teams ship claims — "our model hits 92% accuracy", "p95
+latency is under 200ms", "hallucination rate is below 3%" — and
+then silently edit the threshold when the claim stops holding.
+There is no Git-native enforcement of pre-registration for
+machine-checkable claims. Silent threshold lowering is the #1
+failure mode of internal ML teams we have talked to: not malice,
+just pressure. By the time anyone notices, the commit history
+looks clean and the bar has quietly moved.
 
-**Your AI agent lied to you last Tuesday. You didn't catch it
-because you didn't lock the claim first.**
+## What falsify does
 
-Falsification Engine is git for AI honesty. Before you run the
-experiment, you declare the claim, the metric, and the threshold.
-A SHA-256 hash freezes the spec. Then you run, and the verdict is
-deterministic — PASS, FAIL, or hash mismatch if someone tampered.
-A commit-msg git hook blocks any commit whose message contradicts
-the locked verdict.
+falsify is a CLI that pre-registers each claim in a hash-locked
+YAML spec before the experiment runs. Threshold, direction,
+dataset path, and metric-function reference are sealed in
+canonical YAML and SHA-256 hashed. Any silent edit changes the
+hash; any run against a tampered spec exits with code 3. CI
+gates on deterministic exit codes (0 PASS, 10 FAIL, 3 hash
+mismatch, 11 guard violation). The honest path — explicit
+`--force` relock plus a visible audit entry — is fast; the
+dishonest path is blocked at run time by the hash mismatch.
 
-Eight CLI subcommands, a CI workflow that re-verdicts every push,
-three Claude Code skills (hypothesis-author, falsify orchestrator,
-claim-audit), and two forked-context subagents (claim-auditor for
-semantic cross-reference, verdict-refresher for autonomous
-stale-verdict maintenance). Opus 4.7's long context handles the
-full repo plus verdict history as a single reasoning unit.
+## Why it matters for Opus 4.7
 
-In a world where agents generate research faster than humans can
-peer-review it, falsifiability has to be enforced at commit time,
-not at conference time. MIT licensed, stdlib + pyyaml,
-`pip install .` and go.
+Claude Code is already being used to generate and evaluate ML
+claims every day. falsify gives Claude — and humans working with
+Claude — a shared discipline tool: the model can draft a
+falsifiable spec through the `hypothesis-author` skill, a
+forked-context subagent can audit every claim against the full
+verdict store paraphrase-aware, a slash command can scaffold the
+full lock-run-verdict lifecycle, and an MCP server lets every
+Claude session query live verdicts across the repo. Opus 4.7's
+1M-token context makes each of those moves a single-pass
+reasoning operation rather than a retrieval dance. This is what
+pre-registration looks like when AI writes the experiments.
 
-falsify uses falsify to pre-register claims about falsify — three
-locked self-claims (`cli_startup`, `test_coverage_count`,
-`claude_surface`) verified on every CI run.
+## Scope delivered
 
-Demo video script lives in [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md)
-— shot-by-shot, TTS-ready voiceover, SRT captions.
+- 59 commits, 2 days of pair-programming with Claude Opus 4.7.
+- 454 tests across 58 files, all passing. 10 intentionally
+  skipped (MCP SDK gated + Python 3.11-only pyproject parity).
+- 17 CLI subcommands — init, lock, run, verdict, guard, list,
+  stats, diff, hook, doctor, version, export, verify, replay,
+  why, trend, score.
+- 4 Claude skills (`hypothesis-author`, `falsify`, `claim-audit`,
+  `claim-review`) plus 2 forked-context subagents
+  (`claim-auditor`, `verdict-refresher`).
+- 3 Claude Code slash commands (`/new-claim`, `/audit-claims`,
+  `/ship-verdict`).
+- 1 MCP server with 4 tools (`list_verdicts`, `get_verdict`,
+  `get_stats`, `check_claim`) and 3 resource URIs, real
+  `mcp.server.Server` SDK wiring with lazy import.
+- 2 Managed Agents deployment manifests (scheduled + on-demand).
+- 5 claim templates (`accuracy`, `latency`, `brier`,
+  `llm-judge`, `ab`) via `falsify init --template`.
+- `pre-commit` framework integration — consumer-facing
+  `.pre-commit-hooks.yaml` plus local `.pre-commit-config.yaml`.
+- Docker reproducible-environment image (`make docker-build`).
+- Self-dogfooded: 3 locked claims about falsify's own
+  properties (`cli_startup`, `test_coverage_count`,
+  `claude_surface`) re-verified on every CI run. Honesty score
+  1.00.
 
-## How Opus 4.7 was used
+## 30-second reproduction
 
-Opus 4.7's 1M-token context is what made this shape of tool
-possible. Each forked-context subagent loads the full verdict
-store plus the input text as a single reasoning unit — no paging,
-no retrieval indirection. `claim-auditor` performs paraphrase-aware
-cross-reference of PR bodies and release notes against every
-`verdict.json`. `verdict-refresher` reads `falsify stats --json`
-and autonomously re-runs stale specs. On top, three in-session
-skills drive the human-facing workflow: `hypothesis-author` drafts
-a falsifiable spec through a five-question dialogue, the `falsify`
-skill routes any empirical claim to the right pipeline step, and
-`claim-audit` runs a fast regex pass before escalating to the
-subagent. Every commit carries a `Co-Authored-By: Claude` trailer.
+    git clone https://github.com/<USER>/falsify-hackathon
+    cd falsify-hackathon
+    pip install -e .
+    falsify init --template accuracy
+    falsify lock accuracy
+    falsify run accuracy
+    falsify verdict accuracy   # exit 0 = PASS
 
-## Repo link
+Replace `<USER>` with the final GitHub handle before submission.
 
-Placeholder: `https://github.com/<USER>/falsify-hackathon` — replace
-before submission.
+## The money shot
 
-## Demo video link
+Edit the locked `spec.yaml` to lower the threshold. Run again.
+The CLI exits 3 — hash mismatch — and refuses to produce a
+verdict against a tampered spec. The lie is blocked
+automatically. The honest correction is `falsify lock --force`,
+which produces a new hash and a visible audit entry recoverable
+via `falsify export`. That single workflow is the difference
+between a test suite (asserts after the fact) and a claim
+contract (sealed before the fact).
 
-Placeholder: `<YouTube or Vimeo URL>` — replace Friday after upload.
+## Demo video
 
-## Trust model
+- 90-second video: `<VIDEO_URL>` — replace before submission.
+- Script and storyboard:
+  [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) — shot-by-shot
+  timing, TTS-ready voiceover, and SRT captions.
 
-We document a serious threat model in
-[`docs/ADVERSARIAL.md`](docs/ADVERSARIAL.md) — 8 defended attacks,
-6 explicitly undefended. We earn trust by stating limits.
-[`docs/COMPARISON.md`](docs/COMPARISON.md) gives a 15-row feature
-matrix vs MLflow, W&B, DVC, OSF, pytest, and pre-commit — honest
-about where each competitor is stronger.
+## Documentation depth
 
-## License
+- [`README.md`](README.md) — landing page and quickstart.
+- [`TUTORIAL.md`](TUTORIAL.md) — 15-minute hands-on walkthrough
+  from zero to first locked claim.
+- [`DEMO.md`](DEMO.md) — the 5-step live walkthrough used in the
+  hackathon demo video.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system design,
+  data flow, core invariants, commands table.
+- [`docs/ADVERSARIAL.md`](docs/ADVERSARIAL.md) — threat model with
+  8 defended attacks and 6 explicitly undefended.
+- [`docs/FAQ.md`](docs/FAQ.md) — 15 direct answers to
+  "why not just X?" objections.
+- [`docs/COMPARISON.md`](docs/COMPARISON.md) — 15-row feature
+  matrix vs MLflow, W&B, DVC, OSF, pytest, pre-commit.
+- [`docs/PR_REVIEW.md`](docs/PR_REVIEW.md) — CI integration for
+  the `claim-review` skill.
+- [`docs/MANAGED_AGENTS.md`](docs/MANAGED_AGENTS.md) — Anthropic
+  Console setup guide for cloud deployment.
+- [`CLAUDE.md`](CLAUDE.md) — project instructions for Claude
+  Code users, encoding the Prime Directive and dev rules.
+- [`ROADMAP.md`](ROADMAP.md) — 0.2.0 (MCP + Managed Agents) and
+  beyond.
+- [`CHANGELOG.md`](CHANGELOG.md) — Keep-a-Changelog format.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — ground rules, setup,
+  release ritual.
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — Contributor
+  Covenant v2.1.
 
-MIT — new work, not derived from prior projects.
+## What falsify is NOT
 
-## Tech stack
+- Not a metric tracker. Use MLflow, W&B, or Neptune.
+- Not a data versioner. Use DVC, Pachyderm, or LakeFS.
+- Not a publication platform. Use OSF or AsPredicted.
+- Not a test framework. Use pytest or your language's
+  equivalent.
+- falsify is a discipline tool for claim contracts — it composes
+  with every tool above rather than replacing any of them.
 
-Python 3.11+, pyyaml only. Stdlib `unittest`. Bash smoke test.
-GitHub Actions CI. Claude Code skills and subagents.
+## Known gaps
+
+- Bayesian and sequential stopping rules are planned for 0.3.0.
+  Current stopping-rule support is fixed-n plus manual review.
+  See [`ROADMAP.md`](ROADMAP.md).
+- Filesystem-level tampering (`rm -rf .falsify/`) is explicitly
+  out of scope. Falsify is a discipline tool, not a zero-trust
+  system. See [`docs/ADVERSARIAL.md`](docs/ADVERSARIAL.md).
+- Single-file `falsify.py` by design; a plugin architecture for
+  custom hashers or canonicalizers is not planned — the SHA-256
+  invariant is load-bearing.
+- MCP server requires the `mcp` Python SDK; degrades gracefully
+  to a clear exit-2 hint when the extra is not installed. Plain
+  helpers import without it for unit tests.
+
+## Built with Opus 4.7
+
+Every line of code in this repo was written with Claude Opus 4.7
+via Claude Code over 2 days of pair-programming. 59 commits, 454
+tests, one-shot composition of a CLI, a forked-context subagent
+layer, an MCP server, and a full documentation set. The
+development loop itself was a demonstration of what this project
+advocates: Claude proposed changes; locks were applied to every
+self-claim before any run; CI gated on deterministic verdicts;
+regressions were caught before merge. Every commit carries a
+`Co-Authored-By: Claude` trailer.
 
 ## Team
 
-Solo — Cüneyt Öztürk (Studio 11, Istanbul).
+Solo — Cüneyt Öztürk (Istanbul). GitHub: `<USER>` (replace before
+submission).
 
-## What's next
+## License
 
-- MCP server exposing the verdict log across Claude sessions.
-- Managed Agents deployment for cloud-based verdict refresh.
-- Multi-spec aggregation dashboard.
-- Integrations: GitHub PR bot, Slack notifier.
+MIT — new work, not derived from prior projects. See
+[`LICENSE`](LICENSE).
 
 ## Submission checklist
 
-- [ ] Repo public on GitHub
-- [ ] CI badge green
-- [ ] LICENSE file present (MIT)
-- [ ] README polished
-- [ ] DEMO.md runnable end-to-end
-- [ ] Demo video uploaded
-- [ ] Submission form filled
-- [ ] Form submitted before April 26 8:00 PM EST
+- [ ] Repo public on GitHub; `<USER>` placeholders replaced.
+- [ ] CI badge green on `main`.
+- [ ] LICENSE file present (MIT).
+- [ ] Demo video uploaded; URL substituted above.
+- [ ] Submission form filled and reviewed.
+- [ ] Form submitted before April 26 8:00 PM EST.

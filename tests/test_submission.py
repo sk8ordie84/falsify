@@ -30,13 +30,26 @@ class SubmissionTests(unittest.TestCase):
         self.assertGreater(len(self.text), 0)
 
     def test_has_tagline_section(self) -> None:
-        self.assertIn("tagline", self.text.lower())
+        # Polished SUBMISSION.md leads with the one-liner as a
+        # Markdown blockquote under the H1 rather than a "Tagline"
+        # heading.
+        self.assertRegex(
+            self.text,
+            r"(?m)^>\s+Lock the claim before the data",
+            "submission must lead with the one-liner blockquote",
+        )
 
     def test_has_short_description(self) -> None:
-        self.assertIn("Short description", self.text)
+        # The old "Short description" section was split into
+        # "The problem" + "What falsify does" in the polish pass.
+        self.assertRegex(self.text, r"(?mi)^##\s+The problem\b")
+        self.assertRegex(self.text, r"(?mi)^##\s+What falsify does\b")
 
     def test_has_opus_47_usage(self) -> None:
-        self.assertIn("How Opus 4.7 was used", self.text)
+        # New structure: "Why it matters for Opus 4.7" + "Built
+        # with Opus 4.7" together cover the Opus usage narrative.
+        self.assertRegex(self.text, r"(?mi)^##\s+Built with Opus 4\.7\b")
+        self.assertIn("Opus 4.7", self.text)
 
     def test_has_checklist(self) -> None:
         self.assertIn("Submission checklist", self.text)
@@ -60,10 +73,13 @@ class SubmissionTests(unittest.TestCase):
         self.assertIn("April 26", self.text)
 
     def test_has_git_for_ai_honesty_hook(self) -> None:
+        # Title uses "Git for AI honesty" (capital G); accept
+        # case-insensitively so the hook survives capitalization
+        # tweaks in future polish passes.
         self.assertIn(
-            "git for AI honesty",
-            self.text,
-            "submission must lead with the 'git for AI honesty' hook",
+            "git for ai honesty",
+            self.text.lower(),
+            "submission must lead with the 'Git for AI honesty' hook",
         )
 
 

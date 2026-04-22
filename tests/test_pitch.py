@@ -37,20 +37,15 @@ class PitchTests(unittest.TestCase):
         self.assertIn("Anti-patterns", self.text)
 
     def test_submission_200w_matches_reference(self) -> None:
-        # The canonical 200-word version lives in SUBMISSION.md under
-        # "Short description". PITCH.md points to it; this test
-        # verifies the reference actually holds those phrases.
+        # The polished SUBMISSION.md no longer has a single "Short
+        # description" block — the pitch-worthy phrases live in
+        # the title, "The problem", and "What falsify does"
+        # sections. This test verifies those anchor phrases still
+        # appear in the document PITCH.md points to.
         self.assertTrue(SUBMISSION.exists())
         body = SUBMISSION.read_text()
-        match = re.search(
-            r"## Short description[^\n]*\n\n(.*?)(?=\n## |\Z)",
-            body,
-            flags=re.S,
-        )
-        self.assertIsNotNone(match, "Short description section not found")
-        section = match.group(1)
-        self.assertIn("git for AI honesty", section)
-        self.assertIn("SHA-256", section)
+        self.assertIn("Git for AI honesty", body)
+        self.assertIn("SHA-256", body)
 
 
 if __name__ == "__main__":
