@@ -180,3 +180,5 @@ recipe. In short:
   `docs/ADVERSARIAL.md`.
 - "Why not just X?" objections: `docs/FAQ.md`.
 - Feature matrix vs adjacent tools: `docs/COMPARISON.md`.
+- Term definitions cross-referenced across the docs:
+  `docs/GLOSSARY.md`.

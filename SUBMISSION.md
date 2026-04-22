@@ -120,6 +120,8 @@ contract (sealed before the fact).
   the `claim-review` skill.
 - [`docs/MANAGED_AGENTS.md`](docs/MANAGED_AGENTS.md) — Anthropic
   Console setup guide for cloud deployment.
+- [`docs/GLOSSARY.md`](docs/GLOSSARY.md) — 30+ term A-Z glossary
+  with cross-references across every doc in the repo.
 - [`CLAUDE.md`](CLAUDE.md) — project instructions for Claude
   Code users, encoding the Prime Directive and dev rules.
 - [`ROADMAP.md`](ROADMAP.md) — 0.2.0 (MCP + Managed Agents) and

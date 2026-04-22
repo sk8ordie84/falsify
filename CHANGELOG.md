@@ -32,6 +32,8 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ### Added
 
+- `docs/GLOSSARY.md` — 30+ term glossary with cross-references
+  across all docs.
 - 5th Claude skill `falsify-ci-doctor` — one-shot CI failure
   triage mapping `release-check` FAIL gates to exact fix
   commands.

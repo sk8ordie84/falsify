@@ -358,6 +358,8 @@ See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community standards.
 See [.github/CODEOWNERS](.github/CODEOWNERS) for module-level
 reviewers and [.github/dependabot.yml](.github/dependabot.yml) for
 automated dependency updates.
+See [docs/GLOSSARY.md](docs/GLOSSARY.md) for definitions of every
+term used across the docs.
 
 ## Built with
 
