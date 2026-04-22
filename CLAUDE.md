@@ -146,3 +146,4 @@ recipe. In short:
 - Contributors: `CONTRIBUTING.md`.
 - Auditors, security-minded reviewers, and skeptics:
   `docs/ADVERSARIAL.md`.
+- "Why not just X?" objections: `docs/FAQ.md`.

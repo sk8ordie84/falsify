@@ -151,6 +151,9 @@ make demo      # JUJU end-to-end (lock → run → verdict)
 
 See [Makefile](Makefile) for all targets (`make help`).
 
+Questions and objections? See [docs/FAQ.md](docs/FAQ.md) — 15
+direct answers to "why not just X?" questions.
+
 ### Explain any claim
 
 `falsify why <name>` is the human-friendly companion to `verdict`

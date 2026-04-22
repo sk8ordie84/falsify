@@ -20,6 +20,8 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ### Added
 
+- `docs/FAQ.md` — 15 direct answers to common objections (git
+  hooks, OSF, MLflow, DVC, pytest, and more).
 - `CLAUDE.md` — project instructions for Claude Code users,
   encoding the prime directive, file layout, skills/subagents, and
   non-negotiable development rules.
