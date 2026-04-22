@@ -79,6 +79,10 @@ numbers follow [Semantic Versioning](https://semver.org).
   works without further setup. Flags: `--name`, `--dir`,
   `--force`. Hyphenated template names default to a snake_case
   claim name so the metric module is importable.
+- Claude skill `claim-review` — reviews PR diffs for unlocked
+  specs, silent threshold edits, and broken `metric_fn`
+  references. Runs in PR CI, exits `1` on any CRITICAL finding.
+  Paired with [`docs/PR_REVIEW.md`](docs/PR_REVIEW.md) for setup.
 - `Dockerfile` + `.dockerignore` — reproducible demo environment
   (`docker run --rm -it falsify-demo` fires the auto-demo).
 - `docs/DOCKER.md` — quick run, interactive session, repo-mount,

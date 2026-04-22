@@ -54,9 +54,10 @@ not rhetorical — and CI enforces it on every push.
   contradict a locked verdict.
 - A GitHub Actions workflow that re-verdicts every push and PR
   across Python 3.11 and 3.12.
-- **Three Claude Code skills** and **two forked-context subagents**
+- **Four Claude Code skills** and **two forked-context subagents**
   that draft specs, audit arbitrary text against the verdict log,
-  and keep the log itself fresh.
+  review PR diffs for honesty violations, and keep the log itself
+  fresh.
 
 ## Install
 
@@ -169,6 +170,10 @@ trigger phrases.
 - `claim-audit` runs a fast keyword+regex audit over pasted text
   and escalates to the `claim-auditor` subagent when paraphrases or
   >2 claims show up.
+- `claim-review` reads a PR diff and flags unlocked specs, silent
+  threshold edits, and `metric_fn` references to missing modules —
+  runs in PR CI, exits `1` on any CRITICAL finding. See
+  [`docs/PR_REVIEW.md`](docs/PR_REVIEW.md).
 
 **Subagents** (`.claude/agents/`) — forked-context agents invoked
 via the `Task` tool for heavier work.
