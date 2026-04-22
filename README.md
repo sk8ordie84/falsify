@@ -237,6 +237,17 @@ via the `Task` tool for heavier work.
   or UNRUN verdicts and re-runs them through the CLI — keeping
   `guard` decisions trustworthy.
 
+**Slash commands** (`.claude/commands/`) — in-IDE shortcuts that
+compose the skills and CLI.
+- `/new-claim <template> [name]` — guided scaffold → lock → run →
+  verdict for one of the five templates.
+- `/audit-claims` — repo-wide semantic audit; merges
+  `list`/`stats`/`score` with findings from the `claim-audit`
+  skill into a single markdown report.
+- `/ship-verdict <name>` — four-gate release check (verdict,
+  freshness, replay, audit-chain). Exits non-zero on any gate
+  failure. Does not ship; only verifies.
+
 **CI** (`.github/workflows/falsify.yml`) — on every push and PR,
 the workflow runs the unittest suite, `tests/smoke_test.sh`, the
 JUJU end-to-end (`lock` → `run` → `verdict`), a guard self-check,

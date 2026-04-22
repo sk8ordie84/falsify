@@ -128,15 +128,22 @@ without paging.
   `claim-auditor` (on-demand). Manifests live in
   [`managed_agents/`](../managed_agents/); Console setup guide in
   [`docs/MANAGED_AGENTS.md`](MANAGED_AGENTS.md).
-- **Claude integration surface (0.1.0).** Four skills + two
-  forked-context subagents cover the claim lifecycle:
-  `hypothesis-author` drafts specs through a five-question dialogue;
+- **Claude integration surface (0.1.0).** Five surfaces compose
+  the full Claude footprint: **4 skills**
+  (`hypothesis-author` drafts specs through a five-question dialogue;
   the `falsify` orchestrator routes any empirical claim to the
   right pipeline step; `claim-audit` runs a fast regex pass over
-  arbitrary text; and `claim-review` reads a PR diff for unlocked
-  specs or silent threshold edits. Review runs in PR CI;
-  `claim-auditor` (the semantic subagent) runs nightly — different
-  failure modes, complementary cadences. See
+  arbitrary text; `claim-review` reads a PR diff for unlocked
+  specs or silent threshold edits), **2 forked-context subagents**
+  (`claim-auditor` for nightly semantic cross-reference;
+  `verdict-refresher` for autonomous re-runs of STALE specs),
+  **3 slash commands** (`/new-claim` guided scaffold→lock→run;
+  `/audit-claims` repo-wide audit report; `/ship-verdict`
+  four-gate release check), **1 MCP server** (four read-only
+  tools plus three resource URIs over the verdict store), and
+  **2 Managed Agents** (scheduled and on-demand deployment
+  manifests). Review runs in PR CI; `claim-auditor` runs nightly
+  — different failure modes, complementary cadences. See
   [`docs/PR_REVIEW.md`](PR_REVIEW.md).
 - **Shipped in 0.1.0:** pre-commit framework integration. The
   [`.pre-commit-hooks.yaml`](../.pre-commit-hooks.yaml) manifest

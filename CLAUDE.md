@@ -66,6 +66,24 @@ choose the option that makes dishonesty more visible, not less.
   Reads `falsify stats --json`, re-runs stale specs via the CLI,
   and posts a markdown summary. Scheduled, not per-PR.
 
+## Available slash commands
+
+- **`/new-claim <template> [name]`** — guided flow that scaffolds
+  a claim from one of five templates, opens the spec for review,
+  locks, runs, and reports the verdict. Escalates to `falsify
+  why` on FAIL. **Use when:** onboarding a new claim end-to-end.
+- **`/audit-claims`** — repo-wide semantic audit. Combines
+  `falsify list/stats/score` with the `claim-audit` skill's
+  findings into a single severity-ranked markdown report. **Use
+  when:** pre-release, PR review of claim changes, or a quarterly
+  honesty check.
+- **`/ship-verdict <name>`** — four-gate release-readiness check
+  (verdict PASS, state not STALE, `falsify replay` reproducible,
+  `falsify verify --strict` chain intact). Does not ship anything
+  itself; it is the pre-ship verification gate. **Use when:** the
+  last check before tagging a release or merging a
+  production-critical claim change.
+
 ## Development rules
 
 1. **stdlib + pyyaml only.** No new runtime dependencies without

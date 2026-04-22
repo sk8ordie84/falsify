@@ -20,6 +20,9 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ### Added
 
+- Three Claude Code slash commands: `/new-claim` (guided
+  scaffold→lock→run), `/audit-claims` (repo-wide semantic audit),
+  `/ship-verdict` (release-gate verification).
 - `docs/FAQ.md` — 15 direct answers to common objections (git
   hooks, OSF, MLflow, DVC, pytest, and more).
 - `CLAUDE.md` — project instructions for Claude Code users,
