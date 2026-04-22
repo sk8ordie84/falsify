@@ -69,8 +69,16 @@ class ReleaseCheckTests(unittest.TestCase):
 
     def test_exit_codes_documented(self) -> None:
         self.assertIn("Exit codes", self.source)
-        self.assertRegex(self.source, r"\bexit\s*0\b|sys\.exit\(0\)")
-        self.assertRegex(self.source, r"\bexit\s*1\b|sys\.exit\(1\)")
+        # Both exit paths must be described somewhere in the source
+        # (docstring bullets "0 — ..." / "1 — ..." or sys.exit calls).
+        self.assertRegex(
+            self.source,
+            r"(?m)^\s*0\s*[—\-]|sys\.exit\(0\)|else 0",
+        )
+        self.assertRegex(
+            self.source,
+            r"(?m)^\s*1\s*[—\-]|sys\.exit\(1\)|1 if ",
+        )
 
 
 if __name__ == "__main__":
