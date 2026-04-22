@@ -154,6 +154,8 @@ See [Makefile](Makefile) for all targets (`make help`).
 Questions and objections? See [docs/FAQ.md](docs/FAQ.md) — 15
 direct answers to "why not just X?" questions.
 
+Feature matrix vs adjacent tools: [docs/COMPARISON.md](docs/COMPARISON.md).
+
 ### Explain any claim
 
 `falsify why <name>` is the human-friendly companion to `verdict`

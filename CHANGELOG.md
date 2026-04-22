@@ -20,6 +20,8 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ### Added
 
+- `docs/COMPARISON.md` — 15-row feature matrix vs MLflow, W&B,
+  DVC, OSF, pytest, pre-commit with honest positioning paragraphs.
 - Three Claude Code slash commands: `/new-claim` (guided
   scaffold→lock→run), `/audit-claims` (repo-wide semantic audit),
   `/ship-verdict` (release-gate verification).

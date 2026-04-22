@@ -165,3 +165,4 @@ recipe. In short:
 - Auditors, security-minded reviewers, and skeptics:
   `docs/ADVERSARIAL.md`.
 - "Why not just X?" objections: `docs/FAQ.md`.
+- Feature matrix vs adjacent tools: `docs/COMPARISON.md`.

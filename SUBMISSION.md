@@ -62,6 +62,9 @@ Placeholder: `<YouTube or Vimeo URL>` — replace Friday after upload.
 We document a serious threat model in
 [`docs/ADVERSARIAL.md`](docs/ADVERSARIAL.md) — 8 defended attacks,
 6 explicitly undefended. We earn trust by stating limits.
+[`docs/COMPARISON.md`](docs/COMPARISON.md) gives a 15-row feature
+matrix vs MLflow, W&B, DVC, OSF, pytest, and pre-commit — honest
+about where each competitor is stronger.
 
 ## License
 

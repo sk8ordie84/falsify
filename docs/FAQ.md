@@ -4,6 +4,8 @@ Direct answers to the objections any serious reader raises within
 five minutes of discovering falsify. No marketing voice. Where a
 competitor is better at something, we say so.
 
+For a scannable feature matrix, see [COMPARISON.md](COMPARISON.md).
+
 ## Why not just use git hooks?
 
 Git hooks catch syntactic drift — trailing whitespace, lint errors,
