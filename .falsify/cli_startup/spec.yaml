@@ -1,0 +1,14 @@
+claim: "falsify CLI startup stays under 500ms median over 5 invocations"
+
+falsification:
+  failure_criteria:
+    - metric: startup_ms
+      direction: below
+      threshold: 500
+  minimum_sample_size: 5
+  stopping_rule: "fixed-n 5 invocations per run"
+
+experiment:
+  command: "python3 claims/self/cli_startup/metric.py"
+  dataset: "."
+  metric_fn: "claims.self.cli_startup.metric:cli_startup_ms"

@@ -1,0 +1,5 @@
+{
+  "canonical_yaml": "claim: Claude integration surface ships more than 8 artifacts (skills + subagents + slash commands)\nexperiment:\n  command: python3 claims/self/claude_surface/metric.py\n  dataset: .claude\n  metric_fn: claims.self.claude_surface.metric:count_claude_artifacts\nfalsification:\n  failure_criteria:\n  - direction: above\n    metric: claude_artifacts\n    threshold: 8\n  minimum_sample_size: 1\n  stopping_rule: fixed-n one walk of .claude/\n",
+  "locked_at": "2026-04-22T06:09:09.570646+00:00",
+  "spec_hash": "3eb568a4f57d721b0777e6ee8387c9423254c175ac0ff463c633019ea6f179f2"
+}

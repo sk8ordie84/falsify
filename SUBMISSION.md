@@ -33,6 +33,10 @@ peer-review it, falsifiability has to be enforced at commit time,
 not at conference time. MIT licensed, stdlib + pyyaml,
 `pip install .` and go.
 
+falsify uses falsify to pre-register claims about falsify — three
+locked self-claims (`cli_startup`, `test_coverage_count`,
+`claude_surface`) verified on every CI run.
+
 ## How Opus 4.7 was used
 
 Opus 4.7's 1M-token context is what made this shape of tool

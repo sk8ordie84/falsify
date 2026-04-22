@@ -1,0 +1,14 @@
+claim: "falsify test suite has more than 400 test methods across tests/test_*.py"
+
+falsification:
+  failure_criteria:
+    - metric: test_count
+      direction: above
+      threshold: 400
+  minimum_sample_size: 1
+  stopping_rule: "fixed-n one walk of the tests/ directory"
+
+experiment:
+  command: "python3 claims/self/test_coverage_count/metric.py"
+  dataset: "tests"
+  metric_fn: "claims.self.test_coverage_count.metric:count_tests"

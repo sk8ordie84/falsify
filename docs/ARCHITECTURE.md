@@ -197,6 +197,26 @@ The full post-hackathon plan lives in [ROADMAP.md](../ROADMAP.md).
 6. **Installable as a package** (`pip install .`) with a `falsify`
    console entry point, not just a script.
 
+## Self-dogfooding
+
+Three locked claims describe falsify's own properties and re-run
+on every CI push via the `dogfood` workflow job and the
+`make dogfood` target:
+
+| Claim name             | Metric              | Direction | Threshold |
+|------------------------|---------------------|-----------|-----------|
+| `cli_startup`          | `startup_ms`        | below     | 500       |
+| `test_coverage_count`  | `test_count`        | above     | 400       |
+| `claude_surface`       | `claude_artifacts`  | above     | 8         |
+
+Source lives at `claims/self/<name>/` (spec + metric + README);
+the locked spec is mirrored to `.falsify/<name>/spec.yaml` and
+hashed into `spec.lock.json`. The runs directory
+(`.falsify/<name>/runs/`) is `.gitignore`d — locks are durable,
+runtime artifacts churn. A regression in any of the three gates
+the `dogfood` job and must be explained in the PR (adjust the
+code, or re-lock with a justified new threshold).
+
 ## Release process
 
 - A `v*.*.*` tag push triggers `.github/workflows/release.yml`.

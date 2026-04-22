@@ -1,0 +1,5 @@
+{
+  "canonical_yaml": "claim: falsify CLI startup stays under 500ms median over 5 invocations\nexperiment:\n  command: python3 claims/self/cli_startup/metric.py\n  dataset: .\n  metric_fn: claims.self.cli_startup.metric:cli_startup_ms\nfalsification:\n  failure_criteria:\n  - direction: below\n    metric: startup_ms\n    threshold: 500\n  minimum_sample_size: 5\n  stopping_rule: fixed-n 5 invocations per run\n",
+  "locked_at": "2026-04-22T06:09:09.442200+00:00",
+  "spec_hash": "8168b28bb34297916419e1568e50894f7907d6d1cfeb2f351abcf45b2e58a321"
+}

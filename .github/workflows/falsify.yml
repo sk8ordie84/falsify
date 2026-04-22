@@ -56,6 +56,22 @@ jobs:
       - name: Run MCP tests
         run: python -m unittest tests.test_mcp tests.test_mcp_server -v
 
+  dogfood:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pyyaml
+        run: pip install pyyaml
+
+      - name: Re-run the three self-claims (dogfood)
+        run: make dogfood
+
   skill-lint:
     runs-on: ubuntu-latest
     steps:

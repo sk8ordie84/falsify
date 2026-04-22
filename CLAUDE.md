@@ -129,10 +129,19 @@ choose the option that makes dishonesty more visible, not less.
 This repo uses falsify on itself — `.falsify/` is tracked in git
 (only `runs/` subdirectories are ignored via `.gitignore`), so
 the lock, spec, and latest verdict for every self-claim are
-version-controlled alongside the code that produces them. Our own
-performance, correctness, and CI-timing claims live under
-`.falsify/self/` and are subject to exactly the same lock-before-
-run discipline as any user claim.
+version-controlled alongside the code that produces them. Three
+self-claims ship today, source in `claims/self/` and locks in
+`.falsify/`:
+
+- `cli_startup` — `python3 falsify.py --help` median over 5
+  spawns must be below 500ms.
+- `test_coverage_count` — the `tests/` directory must contain
+  more than 400 `test_*` methods.
+- `claude_surface` — `.claude/skills/`, `.claude/agents/`, and
+  `.claude/commands/` must collectively hold more than 8
+  artifacts.
+
+`make dogfood` re-runs all three; CI runs it on every push.
 
 ## Out of scope
 

@@ -1,0 +1,14 @@
+claim: "Claude integration surface ships more than 8 artifacts (skills + subagents + slash commands)"
+
+falsification:
+  failure_criteria:
+    - metric: claude_artifacts
+      direction: above
+      threshold: 8
+  minimum_sample_size: 1
+  stopping_rule: "fixed-n one walk of .claude/"
+
+experiment:
+  command: "python3 claims/self/claude_surface/metric.py"
+  dataset: ".claude"
+  metric_fn: "claims.self.claude_surface.metric:count_claude_artifacts"

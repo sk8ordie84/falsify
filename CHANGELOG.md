@@ -20,6 +20,9 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ### Added
 
+- Self-dogfooding — three locked claims (`cli_startup`,
+  `test_coverage_count`, `claude_surface`) verify falsify's own
+  properties; `make dogfood` re-runs them; CI gates on them.
 - `docs/COMPARISON.md` — 15-row feature matrix vs MLflow, W&B,
   DVC, OSF, pytest, pre-commit with honest positioning paragraphs.
 - Three Claude Code slash commands: `/new-claim` (guided

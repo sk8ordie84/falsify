@@ -1,0 +1,5 @@
+{
+  "canonical_yaml": "claim: falsify test suite has more than 400 test methods across tests/test_*.py\nexperiment:\n  command: python3 claims/self/test_coverage_count/metric.py\n  dataset: tests\n  metric_fn: claims.self.test_coverage_count.metric:count_tests\nfalsification:\n  failure_criteria:\n  - direction: above\n    metric: test_count\n    threshold: 400\n  minimum_sample_size: 1\n  stopping_rule: fixed-n one walk of the tests/ directory\n",
+  "locked_at": "2026-04-22T06:09:09.507211+00:00",
+  "spec_hash": "66c8d777673b086c6b4111f92ed38961ebbefd45dcfaa6436d6a10114d86b942"
+}

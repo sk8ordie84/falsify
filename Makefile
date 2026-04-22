@@ -1,4 +1,4 @@
-.PHONY: help install test smoke ci demo demo-script doctor clean lint-skills version docker-build docker-run
+.PHONY: help install test smoke ci demo demo-script doctor clean lint-skills version docker-build docker-run dogfood self-status
 
 help:
 	@echo "Falsification Engine — common targets"
@@ -14,6 +14,8 @@ help:
 	@echo "  make clean        — remove generated .falsify/ runs (keep specs)"
 	@echo "  make docker-build — build the falsify-demo Docker image"
 	@echo "  make docker-run   — run the auto-demo in a container"
+	@echo "  make dogfood      — re-run the three self-claims (cli_startup, test_coverage_count, claude_surface)"
+	@echo "  make self-status  — print `falsify why` for each self-claim"
 
 install:
 	pip install pyyaml
@@ -24,7 +26,7 @@ test:
 smoke:
 	bash tests/smoke_test.sh
 
-ci: test smoke demo lint-skills
+ci: test smoke demo lint-skills dogfood
 
 demo:
 	python3 falsify.py lock juju
@@ -58,3 +60,16 @@ docker-build:
 
 docker-run:
 	docker run --rm -it falsify-demo
+
+dogfood:
+	@for claim in cli_startup test_coverage_count claude_surface; do \
+		python3 falsify.py run $$claim || exit 1; \
+		python3 falsify.py verdict $$claim || exit 1; \
+	done
+	@python3 falsify.py score --format text
+
+self-status:
+	@for claim in cli_startup test_coverage_count claude_surface; do \
+		python3 falsify.py why $$claim; \
+		echo ""; \
+	done

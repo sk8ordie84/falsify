@@ -320,6 +320,17 @@ ln -sf "$(pwd)/hooks/commit-msg" .git/hooks/commit-msg
 - `.claude/agents/` — the two forked-context subagents.
 - `.github/workflows/` — CI.
 
+## Self-dogfooding
+
+Falsify uses itself. Three real claims about this codebase live
+under `claims/self/`:
+
+- `cli_startup` — CLI startup stays under 500ms median
+- `test_coverage_count` — test suite has more than 400 test methods
+- `claude_surface` — Claude integration ships more than 8 artifacts
+
+Run `make dogfood` to re-verify. CI runs these on every PR.
+
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for release history.
