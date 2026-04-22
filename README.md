@@ -47,9 +47,9 @@ not rhetorical — and CI enforces it on every push.
 
 ## What you get
 
-- A single-file CLI (`falsify`) with **15 subcommands**: `init`,
+- A single-file CLI (`falsify`) with **16 subcommands**: `init`,
   `lock`, `run`, `verdict`, `guard`, `list`, `stats`, `diff`, `hook`,
-  `doctor`, `version`, `export`, `verify`, `replay`, `why`.
+  `doctor`, `version`, `export`, `verify`, `replay`, `why`, `trend`.
 - A `commit-msg` git hook that blocks commits whose messages
   contradict a locked verdict.
 - A GitHub Actions workflow that re-verdicts every push and PR
@@ -168,6 +168,34 @@ next action: `falsify run <name>` to produce a fresh verdict against
 
 Add `--json` for a scripted pipeline, `--verbose` for full hashes
 and the last five runs.
+
+### Spot drift with a sparkline
+
+`falsify trend <name>` draws an ASCII sparkline of the metric
+across its recorded runs, marks the threshold line, and classifies
+the trajectory as **improving**, **degrading**, **flat**, or
+**mixed**.
+
+```
+claim: juju
+threshold: 0.25 (direction: below)
+runs: 20 shown (of 20)
+
+▁▂▂▃▃▄▄▅▅▆▆▆▇▇████
+                    TT
+threshold=0.25 (shown)
+
+first: 0.12 @ ... (PASS)
+last:  0.23 @ ... (PASS)
+min:   0.09
+max:   0.23
+mean:  0.17
+latest verdict: PASS
+trend: degrading
+```
+
+`--ascii` swaps in `_.oO#`; `--width` resizes the sparkline;
+`--last` caps history (default 20, max 200).
 
 ## Exit codes
 

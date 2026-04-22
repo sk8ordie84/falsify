@@ -173,6 +173,17 @@ A single number across every claim in `.falsify/`. The shields
 form is a JSON endpoint you can drop straight into your README
 for a live badge that turns red when claims start failing.
 
+## Bonus — spotting drift
+
+```bash
+python3 falsify.py trend juju
+```
+
+ASCII sparkline of the metric across every recorded run, with the
+threshold line marked and the trajectory classified (`improving` /
+`degrading` / `flat` / `mixed`). Useful for catching a slow
+regression before it tips a claim into FAIL.
+
 ## Bonus — explaining a verdict
 
 ```bash

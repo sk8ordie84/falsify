@@ -66,6 +66,7 @@ reproducible from what's on disk.
 | `falsify.py::cmd_replay`  | re-run a stored run's metric and verify the value matches              |
 | `falsify.py::cmd_score`   | aggregate honesty score with text / json / shields / svg outputs       |
 | `falsify.py::cmd_why`     | human-readable state diagnostic + next honest action (always exit 0)   |
+| `falsify.py::cmd_trend`   | ASCII sparkline of the metric across runs with drift classifier        |
 
 ## Why SHA-256 of canonical YAML (not of the raw file)
 

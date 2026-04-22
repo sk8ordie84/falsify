@@ -2608,6 +2608,230 @@ def cmd_score(args: argparse.Namespace) -> int:
     return EXIT_PASS
 
 
+_TREND_BLOCKS_UNI = "▁▂▃▄▅▆▇█"
+_TREND_BLOCKS_ASCII = "_.oO#"
+
+
+def _trend_collect_records(claim_dir: Path) -> list[dict]:
+    """Walk the claim's runs/ dir, return verdict-bearing records in
+    chronological order (run dir name is a sortable UTC timestamp)."""
+    runs_dir = claim_dir / "runs"
+    if not runs_dir.exists():
+        return []
+    out: list[dict] = []
+    for run_dir in sorted(runs_dir.iterdir()):
+        if not run_dir.is_dir():
+            continue
+        verdict_path = run_dir / "verdict.json"
+        if not verdict_path.exists():
+            continue
+        try:
+            vd = json.loads(verdict_path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        val = vd.get("observed_value") if isinstance(vd, dict) else None
+        if not isinstance(val, (int, float)) or isinstance(val, bool):
+            continue
+
+        spec_hash: str | None = None
+        lock_path = run_dir / "spec.lock.json"
+        if lock_path.exists():
+            try:
+                lock_data = json.loads(lock_path.read_text())
+                h = lock_data.get("spec_hash") if isinstance(lock_data, dict) else None
+                if isinstance(h, str):
+                    spec_hash = h
+            except (OSError, json.JSONDecodeError):
+                pass
+
+        out.append({
+            "run_id": run_dir.name,
+            "timestamp": (
+                vd.get("checked_at")
+                if isinstance(vd.get("checked_at"), str)
+                else run_dir.name
+            ),
+            "value": float(val),
+            "n": vd.get("sample_size"),
+            "verdict": vd.get("verdict", "UNKNOWN"),
+            "spec_hash": spec_hash,
+        })
+    return out
+
+
+def _trend_resample(values: list[float], width: int) -> list[float]:
+    n = len(values)
+    if n == 0 or width <= 0:
+        return []
+    return [values[int(i * n / width)] for i in range(width)]
+
+
+def _trend_sparkline(values: list[float], width: int, ascii_mode: bool) -> str:
+    chars = _TREND_BLOCKS_ASCII if ascii_mode else _TREND_BLOCKS_UNI
+    if not values:
+        return ""
+    lo, hi = min(values), max(values)
+    span = (hi - lo) if hi > lo else 1.0
+    n_levels = len(chars)
+    sampled = _trend_resample(values, width)
+    out = []
+    for v in sampled:
+        idx = int((v - lo) / span * n_levels)
+        idx = min(n_levels - 1, max(0, idx))
+        out.append(chars[idx])
+    return "".join(out)
+
+
+def _trend_overlay(
+    values: list[float],
+    threshold: float | None,
+    direction: str | None,
+    width: int,
+) -> tuple[str, str]:
+    if (
+        threshold is None
+        or direction is None
+        or not isinstance(threshold, (int, float))
+    ):
+        return " " * width, "threshold: unknown"
+
+    lo, hi = min(values), max(values)
+    if lo <= threshold <= hi:
+        sampled = _trend_resample(values, width)
+        chars = []
+        for v in sampled:
+            if direction == "above":
+                fails = v <= threshold
+            elif direction == "below":
+                fails = v >= threshold
+            elif direction == "equals":
+                fails = abs(v - threshold) > 1e-9
+            else:
+                fails = False
+            chars.append("T" if fails else " ")
+        return "".join(chars), f"threshold={threshold} (shown)"
+
+    if threshold > hi:
+        return " " * width, f"threshold={threshold} (off-chart, above)"
+    return " " * width, f"threshold={threshold} (off-chart, below)"
+
+
+def _trend_classify(values: list[float], direction: str | None) -> str:
+    n = len(values)
+    if n < 2:
+        return "flat"
+    third = max(1, n // 3)
+    first_mean = sum(values[:third]) / third
+    last_mean = sum(values[-third:]) / third
+    delta = last_mean - first_mean
+    lo, hi = min(values), max(values)
+    spread = (hi - lo) if hi > lo else 0.0
+    if spread <= 0:
+        return "flat"
+    pct = abs(delta) / spread
+    if pct < 0.02:
+        return "flat"
+    if direction == "above":
+        going_bad = delta < 0
+    elif direction == "below":
+        going_bad = delta > 0
+    else:
+        return "mixed"
+    if pct > 0.05:
+        return "degrading" if going_bad else "improving"
+    return "mixed"
+
+
+def cmd_trend(args: argparse.Namespace) -> int:
+    name = args.claim_name
+    claim_dir = FALSIFY_DIR / name
+    if not claim_dir.exists() or not (claim_dir / "spec.yaml").exists():
+        print(
+            f"falsify trend: claim {name!r} not found under "
+            f".falsify/ (try `falsify list`)",
+            file=sys.stderr,
+        )
+        return EXIT_BAD_SPEC
+
+    threshold: float | None = None
+    direction: str | None = None
+    try:
+        spec = yaml.safe_load((claim_dir / "spec.yaml").read_text())
+    except (yaml.YAMLError, OSError):
+        spec = None
+    if isinstance(spec, dict):
+        fc = (spec.get("falsification") or {}).get("failure_criteria") or []
+        if fc and isinstance(fc[0], dict):
+            t = fc[0].get("threshold")
+            if isinstance(t, (int, float)) and not isinstance(t, bool):
+                threshold = float(t)
+            d = fc[0].get("direction")
+            if isinstance(d, str):
+                direction = d
+
+    all_records = _trend_collect_records(claim_dir)
+    total = len(all_records)
+    last_cap = min(max(1, args.last or 20), 200)
+    records = all_records[-last_cap:]
+    shown = len(records)
+
+    if args.json:
+        values = [r["value"] for r in records]
+        summary: dict[str, Any] = {
+            "shown": shown,
+            "total": total,
+            "threshold": threshold,
+            "direction": direction,
+        }
+        if values:
+            summary.update({
+                "min": min(values),
+                "max": max(values),
+                "mean": sum(values) / len(values),
+                "trend": _trend_classify(values, direction),
+                "latest_verdict": records[-1]["verdict"],
+            })
+        print(json.dumps(
+            {"claim": name, "records": records, "summary": summary},
+            indent=2,
+            sort_keys=True,
+        ))
+        return EXIT_PASS
+
+    print(f"claim: {name}")
+    if threshold is not None:
+        print(f"threshold: {threshold} (direction: {direction})")
+    print(f"runs: {shown} shown (of {total})")
+    print()
+
+    if shown < 2:
+        print(f"not enough runs for a trend (need >= 2, have {shown})")
+        return EXIT_PASS
+
+    values = [r["value"] for r in records]
+    lo, hi = min(values), max(values)
+    width = max(1, args.width or 40)
+
+    print(_trend_sparkline(values, width, ascii_mode=args.ascii))
+    overlay, caption = _trend_overlay(values, threshold, direction, width)
+    print(overlay)
+    print(caption)
+    print()
+
+    first, last = records[0], records[-1]
+    mean_val = sum(values) / len(values)
+    classification = _trend_classify(values, direction)
+
+    print(f"first: {first['value']} @ {first['timestamp']} ({first['verdict']})")
+    print(f"last:  {last['value']} @ {last['timestamp']} ({last['verdict']})")
+    print(f"min:   {lo}")
+    print(f"max:   {hi}")
+    print(f"mean:  {mean_val}")
+    print(f"latest verdict: {last['verdict']}")
+    print(f"trend: {classification}")
+    return EXIT_PASS
+
+
 def _ago(ts_iso: str | None) -> str:
     """Return a compact relative age: 'just now', '2m ago', '3h ago', '5d ago'."""
     if not isinstance(ts_iso, str) or not ts_iso:
@@ -3332,6 +3556,35 @@ def build_parser() -> argparse.ArgumentParser:
         help="Emit a machine-readable JSON report",
     )
     p_verify.set_defaults(func=cmd_verify)
+
+    p_trend = sub.add_parser(
+        "trend",
+        help="ASCII sparkline of a claim's metric across its recorded runs",
+    )
+    p_trend.add_argument("claim_name", help="Claim name")
+    p_trend.add_argument(
+        "--last",
+        type=int,
+        default=20,
+        help="Number of most-recent runs to render (default 20, max 200)",
+    )
+    p_trend.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit machine-readable JSON instead of text",
+    )
+    p_trend.add_argument(
+        "--width",
+        type=int,
+        default=40,
+        help="Sparkline width in columns (default 40)",
+    )
+    p_trend.add_argument(
+        "--ascii",
+        action="store_true",
+        help="Use 5-level ASCII characters (_.oO#) instead of Unicode blocks",
+    )
+    p_trend.set_defaults(func=cmd_trend)
 
     p_why = sub.add_parser(
         "why",

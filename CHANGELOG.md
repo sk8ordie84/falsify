@@ -83,6 +83,11 @@ numbers follow [Semantic Versioning](https://semver.org).
   actionable next steps for every claim state (PASS / FAIL /
   INCONCLUSIVE / STALE / UNRUN / UNLOCKED / UNKNOWN). Always
   exits 0 — informational. Flags: `--json`, `--verbose`.
+- `falsify trend <claim>` — ASCII sparkline of the metric across
+  recorded runs, with threshold overlay and an
+  `improving` / `degrading` / `flat` / `mixed` classifier based
+  on first-third vs last-third means. Flags: `--last N` (cap 200),
+  `--width`, `--ascii`, `--json`.
 - Claude skill `claim-review` — reviews PR diffs for unlocked
   specs, silent threshold edits, and broken `metric_fn`
   references. Runs in PR CI, exits `1` on any CRITICAL finding.
