@@ -55,6 +55,11 @@ choose the option that makes dishonesty more visible, not less.
   specs, silent threshold edits, and broken `metric_fn` targets.
   **Use when:** reviewing a pull request that touches `claims/`,
   `examples/**/spec.yaml`, or any metric module.
+- **`falsify-ci-doctor`** — one-shot CI failure triage. Ingests
+  `make release-check` output, identifies which of the 12 gates
+  failed, and maps each failure to an exact fix command. **Use
+  when:** release-check exits 1 or CI is red and the cause is
+  not obvious from the first line of output.
 
 ## Available subagents
 

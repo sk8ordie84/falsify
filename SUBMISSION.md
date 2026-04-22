@@ -52,9 +52,9 @@ pre-registration looks like when AI writes the experiments.
 - 17 CLI subcommands — init, lock, run, verdict, guard, list,
   stats, diff, hook, doctor, version, export, verify, replay,
   why, trend, score.
-- 4 Claude skills (`hypothesis-author`, `falsify`, `claim-audit`,
-  `claim-review`) plus 2 forked-context subagents
-  (`claim-auditor`, `verdict-refresher`).
+- 5 Claude skills (`hypothesis-author`, `falsify`, `claim-audit`,
+  `claim-review`, `falsify-ci-doctor`) plus 2 forked-context
+  subagents (`claim-auditor`, `verdict-refresher`).
 - 3 Claude Code slash commands (`/new-claim`, `/audit-claims`,
   `/ship-verdict`).
 - 1 MCP server with 4 tools (`list_verdicts`, `get_verdict`,

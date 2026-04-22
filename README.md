@@ -229,6 +229,9 @@ trigger phrases.
   threshold edits, and `metric_fn` references to missing modules —
   runs in PR CI, exits `1` on any CRITICAL finding. See
   [`docs/PR_REVIEW.md`](docs/PR_REVIEW.md).
+- `falsify-ci-doctor` ingests `make release-check` output and
+  maps each FAIL gate to a likely cause and an exact fix command
+  — one-shot triage when CI is red.
 
 **Subagents** (`.claude/agents/`) — forked-context agents invoked
 via the `Task` tool for heavier work.

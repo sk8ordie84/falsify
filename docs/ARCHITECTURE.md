@@ -137,12 +137,14 @@ without paging.
   [`managed_agents/`](../managed_agents/); Console setup guide in
   [`docs/MANAGED_AGENTS.md`](MANAGED_AGENTS.md).
 - **Claude integration surface (0.1.0).** Five surfaces compose
-  the full Claude footprint: **4 skills**
+  the full Claude footprint: **5 skills**
   (`hypothesis-author` drafts specs through a five-question dialogue;
   the `falsify` orchestrator routes any empirical claim to the
   right pipeline step; `claim-audit` runs a fast regex pass over
   arbitrary text; `claim-review` reads a PR diff for unlocked
-  specs or silent threshold edits), **2 forked-context subagents**
+  specs or silent threshold edits; `falsify-ci-doctor` triages
+  red `release-check` runs to an exact fix command), **2
+  forked-context subagents**
   (`claim-auditor` for nightly semantic cross-reference;
   `verdict-refresher` for autonomous re-runs of STALE specs),
   **3 slash commands** (`/new-claim` guided scaffold→lock→run;

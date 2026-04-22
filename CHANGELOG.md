@@ -32,6 +32,9 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ### Added
 
+- 5th Claude skill `falsify-ci-doctor` — one-shot CI failure
+  triage mapping `release-check` FAIL gates to exact fix
+  commands.
 - `.gitignore` rules for run artifacts
   (`.falsify/*/latest_run`, `verdict.json`, `runs/`);
   `.github/CODEOWNERS`, `FUNDING.yml`, `dependabot.yml` for
