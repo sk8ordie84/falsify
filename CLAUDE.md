@@ -182,3 +182,6 @@ recipe. In short:
 - Feature matrix vs adjacent tools: `docs/COMPARISON.md`.
 - Term definitions cross-referenced across the docs:
   `docs/GLOSSARY.md`.
+- Concrete adoption scenarios — how an ML team, a DevOps team,
+  and a research group would actually use falsify this week:
+  `docs/CASE_STUDIES.md`.

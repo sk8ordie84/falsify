@@ -122,6 +122,9 @@ contract (sealed before the fact).
   Console setup guide for cloud deployment.
 - [`docs/GLOSSARY.md`](docs/GLOSSARY.md) — 30+ term A-Z glossary
   with cross-references across every doc in the repo.
+- [`docs/CASE_STUDIES.md`](docs/CASE_STUDIES.md) — three concrete
+  adoption scenarios (ML team, DevOps team, research group) with
+  literal command sequences.
 - [`CLAUDE.md`](CLAUDE.md) — project instructions for Claude
   Code users, encoding the Prime Directive and dev rules.
 - [`ROADMAP.md`](ROADMAP.md) — 0.2.0 (MCP + Managed Agents) and

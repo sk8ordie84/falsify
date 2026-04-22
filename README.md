@@ -360,6 +360,8 @@ reviewers and [.github/dependabot.yml](.github/dependabot.yml) for
 automated dependency updates.
 See [docs/GLOSSARY.md](docs/GLOSSARY.md) for definitions of every
 term used across the docs.
+See [docs/CASE_STUDIES.md](docs/CASE_STUDIES.md) for three concrete
+adoption scenarios: ML team, DevOps team, research group.
 
 ## Built with
 
