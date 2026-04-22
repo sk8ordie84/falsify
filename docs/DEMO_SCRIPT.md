@@ -53,14 +53,19 @@ terminal action are embedded around the money shots.
 > Three weeks later a customer proves the real number is
 > seventy-one. The claim was never falsifiable. Nobody locked
 > the metric, the threshold, or the dataset before the
-> experiment ran. Falsify fixes that. Pre-register the claim
+> experiment ran. Tests still passed. Code review still approved.
+> The number was simply wrong, and nothing in the pipeline was
+> built to catch it. Falsify fixes that. Pre-register the claim
 > with a cryptographic hash before you see the data. Scaffold
 > a claim from a template. Lock it. A SHA-256 hash fingerprints
 > the spec. Run the experiment. The verdict is PASS. Exit code
-> zero. CI passes. Now watch a tamper. Edit the threshold
-> silently. Run again. Exit code three. The lie is blocked
-> automatically. The honest fix re-locks with force. The audit
-> trail writes itself. Five Claude Code skills, two subagents,
+> zero. Continuous integration passes. Now watch a tamper. Edit
+> the threshold silently. Run again. Exit code three. The lie
+> is blocked automatically. The honest fix re-locks with force,
+> and the audit trail writes itself. Every past verdict stays
+> cryptographically chained. Every reviewer can replay the
+> experiment. Every number in a release note now carries its
+> own proof of origin. Five Claude Code skills, two subagents,
 > three slash commands, and one Model Context Protocol server
 > compose the workflow. Lock the claim before the data. Or it
 > did not happen.

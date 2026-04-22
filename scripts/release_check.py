@@ -37,6 +37,10 @@ TOKEN_EXEMPT_FILES = {
     "hypothesis.schema.yaml",
     "scripts/release_check.py",
     "examples/template.yaml",
+    # The CI-doctor skill DOCUMENTS gate 3 behavior and must name
+    # the literal tokens it scans for. Exempting it keeps the skill
+    # text honest without tripping the gate it describes.
+    ".claude/skills/falsify-ci-doctor/SKILL.md",
 }
 PLACEHOLDER_WARN_ONLY = {"SUBMISSION.md", "docs/DEMO_SCRIPT.md"}
 

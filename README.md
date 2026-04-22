@@ -28,9 +28,10 @@ Deterministic exit codes are the API. CI gates on them. Humans read the audit tr
 
 ## 30-second demo
 
-![falsify demo](docs/assets/hero.gif)
+<!-- Hero GIF recorded and linked here on submission day.
+     See docs/DEMO_SCRIPT.md for the 90-second script. -->
 
-*(Lock a claim, run it, watch it PASS. Then tamper with the threshold and watch CI refuse to run.)*
+*(Lock a claim, run it, watch it PASS. Then tamper with the threshold and watch CI refuse to run. Short GIF goes here — full 90-second walkthrough on YouTube.)*
 
 ---
 
