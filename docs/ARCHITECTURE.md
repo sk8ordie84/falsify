@@ -49,6 +49,14 @@ see [ADVERSARIAL.md](ADVERSARIAL.md).
   deterministically via `falsify replay <run-id>`; divergence
   between the stored metric value and the re-computed value is a
   failure mode (exit 10), not a soft warning.
+- **Direction comparisons are strict.** `direction: above` means
+  `observed > threshold` (strictly greater), not `>=`. `direction:
+  below` means `observed < threshold`, not `<=`. `direction:
+  equals` matches within `1e-9`. A claim phrased "at least N" over
+  integer values must set `threshold: N-1` with `direction: above`
+  so that the exact value `N` passes the strict inequality — a
+  common pitfall is writing `threshold: N` and discovering the
+  boundary itself FAILs.
 
 ## Module layout
 

@@ -51,9 +51,14 @@ properties:
               enum: [above, below, equals]
               description: >
                 Direction that must hold for the claim to PASS.
-                above:  observed value must be strictly greater than threshold
-                below:  observed value must be strictly less than threshold
-                equals: |observed - threshold| must be less than 1e-9
+                Comparisons are STRICT — boundary equality FAILS.
+                  above:  observed >  threshold  (strictly greater, NOT >=)
+                  below:  observed <  threshold  (strictly less,    NOT <=)
+                  equals: |observed - threshold| < 1e-9
+                A claim like "at least N" with integer values must set
+                threshold to N-1 and direction to above (so observed=N
+                PASSes as N > N-1). Setting threshold=N with direction
+                above would FAIL at the exact boundary.
             threshold:
               type: number
               description: Numeric threshold the metric is compared to.

@@ -6,6 +6,15 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+### Documentation
+
+- `docs/DEMO_SCRIPT.md` — 90-second demo video storyboard with
+  TTS-ready voiceover, shot-by-shot terminal commands, and SRT
+  captions.
+- Clarified that direction `above`/`below` are strictly
+  greater/less (not `>=`/`<=`) in `hypothesis.schema.yaml`
+  inline docs and `docs/ARCHITECTURE.md` Core invariants.
+
 ### Changed
 
 - `mcp_server/` upgraded from stub to real MCP-SDK implementation.

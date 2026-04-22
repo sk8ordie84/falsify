@@ -37,6 +37,9 @@ falsify uses falsify to pre-register claims about falsify — three
 locked self-claims (`cli_startup`, `test_coverage_count`,
 `claude_surface`) verified on every CI run.
 
+Demo video script lives in [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md)
+— shot-by-shot, TTS-ready voiceover, SRT captions.
+
 ## How Opus 4.7 was used
 
 Opus 4.7's 1M-token context is what made this shape of tool
