@@ -27,7 +27,8 @@ Spec sketch:
       dataset: data/holdout.csv
       metric_fn: eval:accuracy
 
-Behavior:
+Run `falsify why <name>` for a plain-English explanation of the
+current state. Behavior:
 
 - PASS (exit 0): accuracy ≥ 0.92 on ≥ 500 rows.
 - FAIL (exit 10): accuracy < 0.92.
@@ -54,7 +55,8 @@ Spec sketch:
       command: python3 bench/run.py --n 10000 --out bench.json
       metric_fn: bench:p95_ms
 
-Behavior: PASS = latency stays within the budget; FAIL = a
+Run `falsify why <name>` for a plain-English explanation of the
+current state. Behavior: PASS = latency stays within the budget; FAIL = a
 regression merged in. Useful as a pre-release gate — CI blocks
 the release tag when `falsify verdict` exits 10.
 
@@ -79,7 +81,8 @@ Spec sketch:
       command: python3 calibration/brier.py --window 30d --out out.json
       metric_fn: calibration.brier:compute
 
-Behavior: this is exactly the JUJU sample in
+Run `falsify why <name>` for a plain-English explanation of the
+current state. Behavior: this is exactly the JUJU sample in
 `examples/juju_sample/` — the generalization. PASS = calibrated,
 FAIL = re-train or re-price.
 
@@ -104,7 +107,8 @@ Spec sketch:
       command: python3 eval_agreement.py --labeled labeled.csv --predictions preds.csv --out out.json
       metric_fn: eval_agreement:agreement_rate
 
-Behavior: FAIL = the LLM reviewer is disagreeing with humans too
+Run `falsify why <name>` for a plain-English explanation of the
+current state. Behavior: FAIL = the LLM reviewer is disagreeing with humans too
 often → don't ship it as the default path. PASS = safe to enable
 without human-in-the-loop for every flag.
 
@@ -129,7 +133,8 @@ Spec sketch:
       command: python3 ab/run.py --snapshot out.json
       metric_fn: ab:lift
 
-Behavior: the `stopping_rule: fixed sample (no peeking)` note
+Run `falsify why <name>` for a plain-English explanation of the
+current state. Behavior: the `stopping_rule: fixed sample (no peeking)` note
 guards against p-hacking via repeated looks. FAIL = no detectable
 lift; PASS = lift ≥ 2pp on the full pre-registered sample.
 

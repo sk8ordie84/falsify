@@ -2608,6 +2608,331 @@ def cmd_score(args: argparse.Namespace) -> int:
     return EXIT_PASS
 
 
+def _ago(ts_iso: str | None) -> str:
+    """Return a compact relative age: 'just now', '2m ago', '3h ago', '5d ago'."""
+    if not isinstance(ts_iso, str) or not ts_iso:
+        return "unknown"
+    try:
+        then = datetime.fromisoformat(ts_iso)
+    except ValueError:
+        return "unknown"
+    if then.tzinfo is None:
+        then = then.replace(tzinfo=timezone.utc)
+    secs = (datetime.now(timezone.utc) - then).total_seconds()
+    if secs < 0:
+        return "in the future"
+    if secs < 60:
+        return "just now"
+    if secs < 3600:
+        return f"{int(secs // 60)}m ago"
+    if secs < 86400:
+        return f"{int(secs // 3600)}h ago"
+    return f"{int(secs // 86400)}d ago"
+
+
+def _why_state_narrative(
+    state: str,
+    spec: Any,
+    verdict_data: dict | None,
+    stored_hash: str | None,
+    current_hash: str | None,
+) -> tuple[str, str, dict]:
+    failure_criteria: list = []
+    minimum_sample_size = None
+    if isinstance(spec, dict):
+        f = spec.get("falsification", {}) or {}
+        failure_criteria = f.get("failure_criteria") or []
+        minimum_sample_size = f.get("minimum_sample_size")
+
+    first = failure_criteria[0] if failure_criteria else {}
+    metric_name = first.get("metric") if isinstance(first, dict) else None
+    threshold = first.get("threshold") if isinstance(first, dict) else None
+    direction = first.get("direction") if isinstance(first, dict) else None
+
+    value = None
+    n = None
+    if isinstance(verdict_data, dict):
+        value = verdict_data.get("observed_value")
+        n = verdict_data.get("sample_size")
+
+    if state == "PASS":
+        op = {"above": ">", "below": "<", "equals": "≈"}.get(direction or "", "?")
+        reasoning = (
+            f"metric {metric_name} = {value} {op} threshold {threshold} "
+            f"({n} samples)"
+            if n is not None
+            else f"metric {metric_name} = {value} {op} threshold {threshold}"
+        )
+        next_action = "none — the claim is honestly passing."
+        details = {
+            "metric": metric_name,
+            "value": value,
+            "threshold": threshold,
+            "direction": direction,
+            "n": n,
+        }
+    elif state == "FAIL":
+        reasoning = (
+            f"metric {metric_name} = {value} violates threshold "
+            f"{threshold} (direction: {direction})"
+        )
+        next_action = (
+            "either accept the failure, or diagnose the regression. "
+            "Do NOT silently lower the threshold — if the claim itself "
+            "is wrong, relock explicitly with `falsify lock <spec> "
+            "--force` after editing. A relock creates a new hash and "
+            "shows up in the audit trail."
+        )
+        details = {
+            "metric": metric_name,
+            "value": value,
+            "threshold": threshold,
+            "direction": direction,
+        }
+    elif state == "INCONCLUSIVE":
+        vd = verdict_data or {}
+        actual_n = vd.get("sample_size")
+        min_n = vd.get("minimum_sample_size", minimum_sample_size)
+        reasoning = (
+            f"sample size {actual_n} is below minimum {min_n}; "
+            f"verdict is indeterminate."
+        )
+        next_action = (
+            "collect more data, or lower minimum_sample_size with an "
+            "explicit relock."
+        )
+        details = {"sample_size": actual_n, "minimum_sample_size": min_n}
+    elif state == "STALE":
+        cur_short = (current_hash or "?")[:12]
+        stored_short = (stored_hash or "?")[:12]
+        reasoning = (
+            f"the spec has been edited (sha256:{cur_short}) but no run "
+            f"exists against this hash. Last run was against "
+            f"sha256:{stored_short}."
+        )
+        next_action = (
+            "`falsify run <name>` to produce a fresh verdict against "
+            "the current spec."
+        )
+        details = {"stored_hash": stored_hash, "current_hash": current_hash}
+    elif state == "UNRUN":
+        short = (stored_hash or "?")[:12]
+        reasoning = (
+            f"the spec is locked (sha256:{short}) but has never been "
+            f"executed."
+        )
+        next_action = "`falsify run <name>`"
+        details = {"stored_hash": stored_hash}
+    elif state == "UNLOCKED":
+        reasoning = (
+            "the spec exists but no spec.lock.json — it has not been "
+            "committed-to yet. Running now would violate pre-registration."
+        )
+        next_action = "`falsify lock <name>`, then `falsify run <name>`."
+        details = {}
+    else:
+        reasoning = f"state is {state} — inspect manually"
+        next_action = "run `falsify doctor` for diagnostics."
+        details = {}
+
+    return reasoning, next_action, details
+
+
+def _why_recent_runs(claim_dir: Path, limit: int = 5) -> list[dict]:
+    runs_dir = claim_dir / "runs"
+    if not runs_dir.exists():
+        return []
+    run_dirs = sorted(
+        (p for p in runs_dir.iterdir() if p.is_dir()),
+        key=lambda p: p.name,
+        reverse=True,
+    )
+    out: list[dict] = []
+    for rd in run_dirs[:limit]:
+        entry: dict = {"run_id": rd.name}
+        vp = rd / "verdict.json"
+        if vp.exists():
+            try:
+                vd = json.loads(vp.read_text())
+                entry["value"] = vd.get("observed_value")
+                entry["n"] = vd.get("sample_size")
+                entry["checked_at"] = vd.get("checked_at")
+            except (OSError, json.JSONDecodeError):
+                pass
+        mp = rd / "run_meta.json"
+        if mp.exists() and "checked_at" not in entry:
+            try:
+                meta = json.loads(mp.read_text())
+                entry["checked_at"] = meta.get("start")
+            except (OSError, json.JSONDecodeError):
+                pass
+        out.append(entry)
+    return out
+
+
+def _compute_why(name: str) -> dict:
+    claim_dir = FALSIFY_DIR / name
+    spec_path = claim_dir / "spec.yaml"
+
+    if not spec_path.exists():
+        claims_hint = ""
+        claims_path = Path("claims") / name
+        if claims_path.exists() and (claims_path / "spec.yaml").exists():
+            claims_hint = (
+                f" Note: claims/{name}/ exists but is not mirrored into "
+                f".falsify/{name}/ yet; re-run `falsify init --template` "
+                f"or copy spec.yaml into place."
+            )
+        return {
+            "claim": name,
+            "state": "UNKNOWN",
+            "reasoning": (
+                f"no claim named {name!r} exists. Scanned .falsify/ "
+                f"and ./claims/.{claims_hint}"
+            ),
+            "locked": None,
+            "last_run": None,
+            "next_action": (
+                "`falsify list` to see known claims, or "
+                "`falsify init --template <type>` to scaffold one."
+            ),
+            "details": {},
+            "recent_runs": [],
+        }
+
+    state, verdict_data = _derive_claim_state(claim_dir)
+
+    try:
+        spec = yaml.safe_load(spec_path.read_text())
+    except (yaml.YAMLError, OSError):
+        spec = None
+
+    lock_data: dict | None = None
+    lock_path = claim_dir / "spec.lock.json"
+    if lock_path.exists():
+        try:
+            lock_data = json.loads(lock_path.read_text())
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    stored_hash = None
+    locked_at = None
+    if isinstance(lock_data, dict):
+        h = lock_data.get("spec_hash")
+        if isinstance(h, str):
+            stored_hash = h
+        la = lock_data.get("locked_at")
+        if isinstance(la, str):
+            locked_at = la
+
+    current_hash = None
+    if isinstance(spec, dict):
+        try:
+            current_hash = hashlib.sha256(
+                _canonicalize(spec).encode("utf-8")
+            ).hexdigest()
+        except Exception:
+            pass
+
+    last_run_iso = None
+    run_dir = _resolve_latest_run(claim_dir)
+    if run_dir is not None and run_dir.exists():
+        meta_path = run_dir / "run_meta.json"
+        if meta_path.exists():
+            try:
+                meta = json.loads(meta_path.read_text())
+                lr = meta.get("start")
+                if isinstance(lr, str):
+                    last_run_iso = lr
+            except (OSError, json.JSONDecodeError):
+                pass
+
+    reasoning, next_action, extras = _why_state_narrative(
+        state, spec, verdict_data, stored_hash, current_hash,
+    )
+
+    locked = (
+        {"hash": stored_hash, "locked_at": locked_at}
+        if stored_hash is not None
+        else None
+    )
+    details = {"stored_hash": stored_hash, "current_hash": current_hash}
+    details.update(extras)
+
+    return {
+        "claim": name,
+        "state": state,
+        "reasoning": reasoning,
+        "locked": locked,
+        "last_run": last_run_iso,
+        "next_action": next_action,
+        "details": details,
+        "recent_runs": _why_recent_runs(claim_dir),
+    }
+
+
+def cmd_why(args: argparse.Namespace) -> int:
+    info = _compute_why(args.claim_name)
+    verbose = bool(getattr(args, "verbose", False))
+
+    if args.json:
+        payload = {
+            "claim": info["claim"],
+            "state": info["state"],
+            "reasoning": info["reasoning"],
+            "locked": info["locked"],
+            "last_run": info["last_run"],
+            "next_action": info["next_action"],
+            "details": info["details"],
+        }
+        if verbose:
+            payload["recent_runs"] = info["recent_runs"]
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return EXIT_PASS
+
+    lines = [
+        f"claim: {info['claim']}",
+        f"state: {info['state']}",
+        f"reasoning: {info['reasoning']}",
+    ]
+    locked = info["locked"]
+    if locked:
+        h = locked["hash"]
+        la = locked["locked_at"]
+        if verbose:
+            lines.append(f"locked: yes (sha256:{h}, locked_at {la})")
+        else:
+            lines.append(f"locked: yes (sha256:{h[:12]}, {_ago(la)})")
+    else:
+        lines.append("locked: no")
+
+    last_run = info["last_run"]
+    if last_run:
+        if verbose:
+            lines.append(f"last run: {last_run}")
+        else:
+            lines.append(f"last run: {last_run} ({_ago(last_run)})")
+    else:
+        lines.append("last run: never")
+
+    lines.append(f"next action: {info['next_action']}")
+
+    if verbose and info["recent_runs"]:
+        lines.append("recent runs:")
+        for r in info["recent_runs"]:
+            ts = r.get("checked_at") or "?"
+            val = r.get("value", "?")
+            n = r.get("n", "?")
+            lines.append(
+                f"  - {r['run_id']}: value={val}, n={n}, ts={ts}"
+            )
+
+    for line in lines:
+        print(line)
+
+    return EXIT_PASS
+
+
 def cmd_version(args: argparse.Namespace) -> int:
     if args.json:
         print(json.dumps({"name": "falsify", "version": __version__}))
@@ -3007,6 +3332,23 @@ def build_parser() -> argparse.ArgumentParser:
         help="Emit a machine-readable JSON report",
     )
     p_verify.set_defaults(func=cmd_verify)
+
+    p_why = sub.add_parser(
+        "why",
+        help="Explain a claim's current state and the next honest action",
+    )
+    p_why.add_argument("claim_name", help="Claim name")
+    p_why.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit machine-readable JSON",
+    )
+    p_why.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Include full hashes, exact timestamps, and recent runs",
+    )
+    p_why.set_defaults(func=cmd_why)
 
     p_score = sub.add_parser(
         "score",

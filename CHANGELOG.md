@@ -79,6 +79,10 @@ numbers follow [Semantic Versioning](https://semver.org).
   works without further setup. Flags: `--name`, `--dir`,
   `--force`. Hyphenated template names default to a snake_case
   claim name so the metric module is importable.
+- `falsify why <claim>` — human-readable state diagnostic with
+  actionable next steps for every claim state (PASS / FAIL /
+  INCONCLUSIVE / STALE / UNRUN / UNLOCKED / UNKNOWN). Always
+  exits 0 — informational. Flags: `--json`, `--verbose`.
 - Claude skill `claim-review` — reviews PR diffs for unlocked
   specs, silent threshold edits, and broken `metric_fn`
   references. Runs in PR CI, exits `1` on any CRITICAL finding.

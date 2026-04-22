@@ -47,9 +47,9 @@ not rhetorical — and CI enforces it on every push.
 
 ## What you get
 
-- A single-file CLI (`falsify`) with **14 subcommands**: `init`,
+- A single-file CLI (`falsify`) with **15 subcommands**: `init`,
   `lock`, `run`, `verdict`, `guard`, `list`, `stats`, `diff`, `hook`,
-  `doctor`, `version`, `export`, `verify`, `replay`.
+  `doctor`, `version`, `export`, `verify`, `replay`, `why`.
 - A `commit-msg` git hook that blocks commits whose messages
   contradict a locked verdict.
 - A GitHub Actions workflow that re-verdicts every push and PR
@@ -148,6 +148,26 @@ make demo      # JUJU end-to-end (lock → run → verdict)
 ```
 
 See [Makefile](Makefile) for all targets (`make help`).
+
+### Explain any claim
+
+`falsify why <name>` is the human-friendly companion to `verdict`
+— it always exits `0` and tells you exactly what the next honest
+move is:
+
+```
+claim: juju
+state: STALE
+reasoning: the spec has been edited (sha256:1038219d75a8) but no run
+  exists against this hash. Last run was against sha256:164f619d4860.
+locked: yes (sha256:164f619d4860, 2h ago)
+last run: 2026-04-22T02:10:17+00:00 (2h ago)
+next action: `falsify run <name>` to produce a fresh verdict against
+  the current spec.
+```
+
+Add `--json` for a scripted pipeline, `--verbose` for full hashes
+and the last five runs.
 
 ## Exit codes
 

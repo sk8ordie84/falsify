@@ -160,10 +160,13 @@ Three commands to see what the system knows about your claim:
     falsify export --output audit.jsonl
     falsify verify audit.jsonl
     falsify replay <run-id>
+    falsify why vowels
 
 `replay` re-runs the metric against the same dataset and exits 0
 only if the value matches bit-for-bit; mismatch or stale spec are
-hard errors.
+hard errors. `why` is the plain-English companion to `verdict` —
+it always exits 0 and tells you what the next honest move is for
+any state (PASS, FAIL, INCONCLUSIVE, STALE, UNRUN, UNLOCKED).
 
 `list` gives you a table of every claim and its state. `stats`
 aggregates counts (PASS/FAIL/INCONCLUSIVE/STALE/UNRUN). `export`

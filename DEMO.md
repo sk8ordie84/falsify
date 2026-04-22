@@ -173,6 +173,29 @@ A single number across every claim in `.falsify/`. The shields
 form is a JSON endpoint you can drop straight into your README
 for a live badge that turns red when claims start failing.
 
+## Bonus — explaining a verdict
+
+```bash
+python3 falsify.py why juju
+```
+
+Output (STALE case, right after someone edits the spec without
+re-locking):
+
+```
+claim: juju
+state: STALE
+reasoning: the spec has been edited (sha256:1038219d75a8) but no run
+  exists against this hash. Last run was against sha256:164f619d4860.
+locked: yes (sha256:164f619d4860, 2h ago)
+last run: 2026-04-22T02:10:17+00:00 (2h ago)
+next action: `falsify run <name>` to produce a fresh verdict against
+  the current spec.
+```
+
+Verdict tells you PASS/FAIL; `why` tells you *why* — and, more
+importantly, what the next honest action is. Always exits 0.
+
 ## Bonus — proving reproducibility
 
 ```bash
