@@ -204,6 +204,22 @@ trend: degrading
 `--ascii` swaps in `_.oO#`; `--width` resizes the sparkline;
 `--last` caps history (default 20, max 200).
 
+### Measure the CLI itself
+
+`falsify bench` spawns each subcommand under a fresh temporary
+directory and records per-command latency (min / median / p95 /
+max / mean / stddev). Useful as a sanity check before a release
+or when investigating a suspected startup-time regression.
+
+```bash
+falsify bench --runs 5 --commands "--help,list,stats,score"
+falsify bench --runs 5 --json     # machine-readable output
+```
+
+`--runs <N>` sets the timed-iteration count (default 5, capped at
+100); `--warmup <N>` discards the first N spawns so JIT / import
+caches stabilize before timing (default 1).
+
 ## Exit codes
 
 | Code | Meaning                                       |

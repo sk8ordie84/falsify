@@ -79,6 +79,7 @@ see [ADVERSARIAL.md](ADVERSARIAL.md).
 | `falsify.py::cmd_score`   | aggregate honesty score with text / json / shields / svg outputs       |
 | `falsify.py::cmd_why`     | human-readable state diagnostic + next honest action (always exit 0)   |
 | `falsify.py::cmd_trend`   | ASCII sparkline of the metric across runs with drift classifier        |
+| `falsify.py::cmd_bench`   | micro-benchmark per-subcommand latency (min/median/p95/max/mean/stddev) |
 
 ## Why SHA-256 of canonical YAML (not of the raw file)
 

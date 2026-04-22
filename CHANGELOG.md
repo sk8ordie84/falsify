@@ -32,6 +32,9 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ### Added
 
+- `falsify bench` — micro-benchmark CLI command latency with
+  min / median / p95 / max / mean / stddev per command; text and
+  `--json` outputs; configurable `--runs` and `--warmup`.
 - `docs/CASE_STUDIES.md` — three concrete adoption scenarios
   (ML team, DevOps team, research group) with literal command
   sequences.

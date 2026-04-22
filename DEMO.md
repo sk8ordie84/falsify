@@ -231,6 +231,19 @@ verify refuses it with exit 10.
 
 ---
 
+## Self-measuring
+
+```bash
+python3 falsify.py bench --runs 3
+```
+
+Spawns each of `init`, `--help`, `list`, `stats`, `score` under a
+fresh temp directory and prints per-command latency (min / median
+/ p95 / max / mean / stddev). Handy as a "did we regress startup
+time?" sanity check before a release.
+
+---
+
 ## See also
 
 - `tests/smoke_test.sh` — full pipeline in one bash driver.

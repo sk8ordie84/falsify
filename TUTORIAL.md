@@ -162,6 +162,7 @@ Three commands to see what the system knows about your claim:
     falsify replay <run-id>
     falsify why vowels
     falsify trend vowels
+    falsify bench   # sanity-check the CLI's own responsiveness
 
 `replay` re-runs the metric against the same dataset and exits 0
 only if the value matches bit-for-bit; mismatch or stale spec are

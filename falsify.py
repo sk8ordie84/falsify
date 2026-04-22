@@ -13,9 +13,12 @@ import platform
 import re
 import shutil
 import socket
+import statistics
 import string
 import subprocess
 import sys
+import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
@@ -3402,6 +3405,151 @@ def cmd_hook(args: argparse.Namespace) -> int:
     return EXIT_BAD_SPEC
 
 
+_BENCH_DEFAULT_COMMANDS = ("init", "--help", "list", "stats", "score")
+_BENCH_MAX_RUNS = 100
+
+
+def _bench_parse_commands(csv_str: str | None) -> list[str]:
+    """Split the --commands CSV; fall back to the built-in default set."""
+    if csv_str is None:
+        return list(_BENCH_DEFAULT_COMMANDS)
+    items = [chunk.strip() for chunk in csv_str.split(",")]
+    return [item for item in items if item]
+
+
+def _bench_stats(samples_ms: list[float]) -> dict[str, float]:
+    """min / median / p95 / max / mean / stddev over a list of ms samples.
+
+    p95 uses linear interpolation on sorted samples so small-n samples
+    behave intuitively ([10,20,30,40,50] → 48). stddev is population
+    stddev — single-element samples therefore report 0.
+    """
+    if not samples_ms:
+        zero = 0.0
+        return {
+            "min_ms": zero, "median_ms": zero, "p95_ms": zero,
+            "max_ms": zero, "mean_ms": zero, "stddev_ms": zero,
+        }
+    sorted_ms = sorted(samples_ms)
+    n = len(sorted_ms)
+    if n == 1:
+        p95 = sorted_ms[0]
+    else:
+        idx = (n - 1) * 0.95
+        lo = int(idx)
+        hi = min(lo + 1, n - 1)
+        frac = idx - lo
+        p95 = sorted_ms[lo] + frac * (sorted_ms[hi] - sorted_ms[lo])
+    return {
+        "min_ms": round(sorted_ms[0], 4),
+        "median_ms": round(statistics.median(sorted_ms), 4),
+        "p95_ms": round(p95, 4),
+        "max_ms": round(sorted_ms[-1], 4),
+        "mean_ms": round(statistics.fmean(sorted_ms), 4),
+        "stddev_ms": round(statistics.pstdev(sorted_ms), 4),
+    }
+
+
+def _bench_format_table(
+    results: list[dict], runs: int, warmup: int
+) -> str:
+    """Render a bench result set as an aligned-column text table."""
+    rows_data = sorted(results, key=lambda r: r["stats"]["median_ms"])
+    header = ["command", "min", "median", "p95", "max", "mean", "stddev", "n"]
+    table: list[list[str]] = [header]
+    for r in rows_data:
+        s = r["stats"]
+        table.append([
+            r["command"],
+            f"{s['min_ms']:.1f}",
+            f"{s['median_ms']:.1f}",
+            f"{s['p95_ms']:.1f}",
+            f"{s['max_ms']:.1f}",
+            f"{s['mean_ms']:.1f}",
+            f"{s['stddev_ms']:.1f}",
+            str(len(r["samples_ms"])),
+        ])
+    widths = [max(len(row[i]) for row in table) for i in range(len(header))]
+    out_lines = [f"falsify bench  (runs={runs}, warmup={warmup})"]
+    for row in table:
+        parts = [row[0].ljust(widths[0])]
+        for j in range(1, len(header)):
+            parts.append(row[j].rjust(widths[j]))
+        out_lines.append("  ".join(parts))
+    return "\n".join(out_lines) + "\n"
+
+
+def cmd_bench(args: argparse.Namespace) -> int:
+    runs = max(1, min(int(args.runs), _BENCH_MAX_RUNS))
+    warmup = max(0, int(args.warmup))
+    commands = _bench_parse_commands(args.commands)
+    if not commands:
+        print(
+            "falsify bench: --commands list is empty",
+            file=sys.stderr,
+        )
+        return EXIT_BAD_SPEC
+
+    script_path = str(Path(__file__).resolve())
+    results: list[dict] = []
+
+    for cmd_str in commands:
+        cmd_argv = cmd_str.split()
+        samples_ms: list[float] = []
+
+        for _ in range(warmup):
+            with tempfile.TemporaryDirectory() as tmp:
+                r = subprocess.run(
+                    [sys.executable, script_path, *cmd_argv],
+                    cwd=tmp, capture_output=True, text=True,
+                )
+            if r.returncode != 0:
+                print(
+                    f"falsify bench: command {cmd_str!r} failed during "
+                    f"warmup (exit {r.returncode})",
+                    file=sys.stderr,
+                )
+                return EXIT_BAD_SPEC
+
+        for iteration in range(runs):
+            with tempfile.TemporaryDirectory() as tmp:
+                start = time.perf_counter()
+                r = subprocess.run(
+                    [sys.executable, script_path, *cmd_argv],
+                    cwd=tmp, capture_output=True, text=True,
+                )
+                elapsed_ms = (time.perf_counter() - start) * 1000.0
+            if r.returncode != 0:
+                print(
+                    f"falsify bench: command {cmd_str!r} failed at "
+                    f"iteration {iteration + 1} (exit {r.returncode})",
+                    file=sys.stderr,
+                )
+                return EXIT_BAD_SPEC
+            samples_ms.append(elapsed_ms)
+
+        results.append({
+            "command": cmd_str,
+            "samples_ms": [round(x, 4) for x in samples_ms],
+            "stats": _bench_stats(samples_ms),
+        })
+
+    if args.json:
+        payload = {
+            "runs": runs,
+            "warmup": warmup,
+            "commands": results,
+            "system": {
+                "python": platform.python_version(),
+                "platform": sys.platform,
+            },
+        }
+        print(json.dumps(payload, indent=2))
+    else:
+        sys.stdout.write(_bench_format_table(results, runs, warmup))
+    return EXIT_PASS
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="falsify",
@@ -3726,6 +3874,30 @@ def build_parser() -> argparse.ArgumentParser:
         help="Filter to claim names containing this substring",
     )
     p_stats.set_defaults(func=cmd_stats)
+
+    p_bench = sub.add_parser(
+        "bench",
+        help="Micro-benchmark CLI command latency",
+    )
+    p_bench.add_argument(
+        "--runs", type=int, default=5,
+        help="Number of timed runs per command (default: 5, capped at 100)",
+    )
+    p_bench.add_argument(
+        "--warmup", type=int, default=1,
+        help="Number of untimed warmup runs per command before the timed "
+             "runs start (default: 1)",
+    )
+    p_bench.add_argument(
+        "--commands", default=None,
+        help="Comma-separated list of subcommands to bench "
+             "(default: init,--help,list,stats,score)",
+    )
+    p_bench.add_argument(
+        "--json", action="store_true",
+        help="Emit machine-readable JSON output",
+    )
+    p_bench.set_defaults(func=cmd_bench)
 
     return parser
 
