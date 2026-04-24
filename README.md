@@ -404,5 +404,5 @@ adoption scenarios: ML team, DevOps team, research group.
 
 ## Built with
 
-Claude Opus 4.7 (1M context), in five days, for the Anthropic
+Claude Opus 4.7 (1M context), in three days, for the Anthropic
 Built with Opus 4.7 hackathon.

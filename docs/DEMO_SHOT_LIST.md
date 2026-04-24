@@ -91,7 +91,7 @@ Visual: split screen, file tree on left with highlights:
 ## Scene 7 — Close (2:45–3:00, 15s)
 
 - Visual: GitHub repo page, green Actions badge, MIT license visible.
-- Voiceover: "Falsification Engine. Open source. Built in five days with Claude Opus 4.7. Link in the description."
+- Voiceover: "Falsification Engine. Open source. Built in three days with Claude Opus 4.7. Link in the description."
 
 ## Pre-record checklist
 
