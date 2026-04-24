@@ -4,6 +4,30 @@ Thanks for the interest. This project lives or dies by the trust in
 its verdicts, so contributions need to keep the determinism contract
 intact.
 
+## Contributor licensing
+
+By submitting a pull request, issue, patch, or any other contribution
+to this repository, you certify that:
+
+1. You wrote the contribution, or you have the right to submit it
+   under the MIT License.
+2. Your contribution is licensed to the project under the
+   [MIT License](LICENSE).
+3. You grant Cüneyt Öztürk (the project author and copyright holder) a
+   perpetual, worldwide, non-exclusive, royalty-free, irrevocable
+   license to use, reproduce, modify, distribute, and **sublicense**
+   your contribution under any terms, including future commercial
+   or dual-license arrangements.
+
+This is a standard developer-certificate-of-origin-plus-re-licensing
+clause used by projects like Grafana, MongoDB (pre-SSPL), and Sentry.
+It keeps the open-source commitment intact (nothing can be removed
+from MIT) while allowing the project to sustain itself through
+enterprise licensing if that becomes necessary.
+
+See [NOTICE](NOTICE) and [docs/COMMERCIAL.md](docs/COMMERCIAL.md) for
+the trademark and commercial-use policy.
+
 Contributors using Claude Code should also read
 [CLAUDE.md](CLAUDE.md) — it encodes the repo's prime directive and
 development rules.

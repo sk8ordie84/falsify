@@ -1,0 +1,48 @@
+falsify
+Copyright © 2026 Cüneyt Öztürk. All rights reserved.
+
+This product includes software developed by Cüneyt Öztürk.
+
+The falsify source code is released under the MIT License (see LICENSE).
+
+──────────────────────────────────────────────────────────────────────────
+Trademark notice
+──────────────────────────────────────────────────────────────────────────
+
+"FALSIFY" and the falsify chevron mark ( ⟐ falsify ) are trademarks of
+Cüneyt Öztürk. The MIT License grants rights to the underlying source
+code; it does NOT grant any right to use the "FALSIFY" name, the
+chevron logo, or any confusingly similar mark in connection with:
+
+  • a competing or derivative product,
+  • a commercial service,
+  • marketing, advertising, or promotional material,
+
+without prior written permission. Forks, derivatives, and modified
+versions must use a distinct name and logo.
+
+──────────────────────────────────────────────────────────────────────────
+Commercial use
+──────────────────────────────────────────────────────────────────────────
+
+Individual developers, researchers, and open-source projects may use
+falsify freely under the MIT License.
+
+Teams deploying falsify in production as part of a commercial service
+are encouraged — but not required by the MIT License — to contact the
+author about support, SLAs, and enterprise features:
+
+    cuneytozturk84@gmail.com
+
+See docs/COMMERCIAL.md for details.
+
+──────────────────────────────────────────────────────────────────────────
+Contributions
+──────────────────────────────────────────────────────────────────────────
+
+By submitting a pull request, you agree that your contribution is
+licensed under the MIT License and you grant Cüneyt Öztürk a perpetual,
+irrevocable license to re-license your contribution under any terms,
+including future commercial or dual-license arrangements.
+
+See CONTRIBUTING.md for the full contributor terms.
