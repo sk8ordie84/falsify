@@ -71,3 +71,34 @@ Thumbs.db
 .venv-demo/
 .venv/
 *.cast.bak
+
+# Video production artifacts (not source — rebuilt from scripts/)
+docs/assets/*.mp3
+docs/assets/*.wav
+docs/assets/frames_*/
+docs/assets/vo_*.mp3
+
+# Intermediate video artifacts — keep only falsify_demo_final_v3.3.mp4
+docs/assets/v2/_build/
+docs/assets/v2/_frames/
+docs/assets/v2/scene_*.mp4
+docs/assets/v2/scene_*_first.png
+docs/assets/v2/scene_*_last.png
+docs/assets/v2/radar_*.mp4
+docs/assets/v2/radar_*.webm
+docs/assets/v2/radar_*_first.png
+docs/assets/v2/radar_*_last.png
+docs/assets/v2/falsify_demo_silent_*.mp4
+docs/assets/v2/falsify_demo_APPROVED_*.mp4
+docs/assets/v2/falsify_demo_final_with_vo.mp4
+docs/assets/v2/falsify_demo_final.mp4
+docs/assets/slide_*.mp4
+docs/assets/slide_*.png
+docs/assets/demo_v*.mp4
+docs/assets/demo_hd.mp4
+docs/assets/concat.txt
+docs/assets/vo_lines/
+.falsify/juju/
+.claude/scheduled_tasks.lock
+docs/assets/vo_lines_callum/
+scripts/radar/

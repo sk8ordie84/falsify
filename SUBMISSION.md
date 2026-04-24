@@ -81,7 +81,7 @@ pre-registration looks like when AI writes the experiments.
 
 ## 30-second reproduction
 
-    git clone https://github.com/<USER>/falsify-hackathon
+    git clone https://github.com/sk8ordie84/falsify
     cd falsify-hackathon
     pip install -e .
     falsify init --template accuracy
@@ -89,7 +89,7 @@ pre-registration looks like when AI writes the experiments.
     falsify run accuracy
     falsify verdict accuracy   # exit 0 = PASS
 
-Replace `<USER>` with the final GitHub handle before submission.
+Replace `sk8ordie84` with the final GitHub handle before submission.
 
 ## The money shot
 
@@ -182,7 +182,7 @@ regressions were caught before merge. Every commit carries a
 
 ## Team
 
-Solo — Cüneyt Öztürk (Istanbul). GitHub: `<USER>` (replace before
+Solo — Cüneyt Öztürk (Istanbul). GitHub: `sk8ordie84` (replace before
 submission).
 
 ## License
@@ -192,7 +192,7 @@ MIT — new work, not derived from prior projects. See
 
 ## Submission checklist
 
-- [ ] Repo public on GitHub; `<USER>` placeholders replaced.
+- [ ] Repo public on GitHub; `sk8ordie84` placeholders replaced.
 - [ ] CI badge green on `main`.
 - [ ] LICENSE file present (MIT).
 - [ ] Demo video uploaded; URL substituted above.

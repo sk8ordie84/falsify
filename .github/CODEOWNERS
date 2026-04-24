@@ -1,10 +1,10 @@
 # Default owner for everything in the repo
-* @<USER>
+* @sk8ordie84
 
 # Core CLI and spec schema require extra scrutiny
-/falsify.py            @<USER>
-/hypothesis.schema.yaml @<USER>
-/scripts/release_check.py @<USER>
+/falsify.py            @sk8ordie84
+/hypothesis.schema.yaml @sk8ordie84
+/scripts/release_check.py @sk8ordie84
 
 # Docs can be reviewed more liberally — but keep owner as default
-/docs/                 @<USER>
+/docs/                 @sk8ordie84

@@ -202,5 +202,5 @@ verdict refresh, multi-metric specs.
 - Built with Claude Code + Opus 4.7 (1M context). Every commit
   carries a `Co-Authored-By:` trailer.
 
-[Unreleased]: https://github.com/<USER>/falsify-hackathon/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/<USER>/falsify-hackathon/releases/tag/v0.1.0
+[Unreleased]: https://github.com/sk8ordie84/falsify/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/sk8ordie84/falsify/releases/tag/v0.1.0

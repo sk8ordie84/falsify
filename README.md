@@ -1,10 +1,10 @@
-# Falsify
+<img src="brand/lockup.svg" alt="falsify" width="320">
 
 > **Pre-registration + CI for AI-agent claims.** Lock the claim and threshold with SHA-256 *before* running the experiment — or the result doesn't count.
 
-![CI](https://github.com/<USER>/falsify/actions/workflows/falsify.yml/badge.svg)
+![CI](https://github.com/sk8ordie84/falsify/actions/workflows/falsify.yml/badge.svg)
 ![coverage](https://img.shields.io/badge/tests-505%20passing-brightgreen)
-![honesty](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/<USER>/falsify/main/.falsify/badge.json)
+![honesty](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/sk8ordie84/falsify/main/.falsify/badge.json)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-blue.svg)
 
@@ -109,7 +109,7 @@ Consume falsify's hooks from your own repo:
 
 ```yaml
 repos:
-  - repo: https://github.com/<USER>/falsify-hackathon
+  - repo: https://github.com/sk8ordie84/falsify
     rev: v0.1.0
     hooks:
       - id: falsify-guard
