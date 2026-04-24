@@ -104,7 +104,7 @@ contract (sealed before the fact).
 
 ## Demo video
 
-- 90-second video: `<VIDEO_URL>` — replace before submission.
+- 90-second video: <https://youtu.be/vVZTNeak5PA>
 - Script and storyboard:
   [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) — shot-by-shot
   timing, TTS-ready voiceover, and SRT captions.
