@@ -10,7 +10,7 @@ written commercial agreement your legal team can sign.
 
 ## When to reach out
 
-Contact [`cuneytozturk84@gmail.com`](mailto:cuneytozturk84@gmail.com) if
+Contact [`hello@studio-11.co`](mailto:hello@studio-11.co) if
 you are:
 
 - Deploying falsify in a SaaS product and want vendor support.
@@ -65,4 +65,4 @@ from the community.
 ## Contact
 
 Cüneyt Öztürk — Istanbul, Turkey
-`cuneytozturk84@gmail.com`
+`hello@studio-11.co`
