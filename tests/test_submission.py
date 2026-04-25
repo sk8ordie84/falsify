@@ -53,7 +53,7 @@ class SubmissionTests(unittest.TestCase):
 
     def test_has_checklist(self) -> None:
         self.assertIn("Submission checklist", self.text)
-        checkboxes = re.findall(r"^- \[ \] ", self.text, re.MULTILINE)
+        checkboxes = re.findall(r"^- \[[ x]\] ", self.text, re.MULTILINE)
         self.assertGreaterEqual(
             len(checkboxes),
             5,
