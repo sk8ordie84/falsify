@@ -191,6 +191,74 @@ class ScoreCommandTests(unittest.TestCase):
         result = _run(["score", "--format", "svg"], cwd=self.cwd)
         ET.fromstring(result.stdout)
 
+    def _make_pass_with_kind(self, name: str, kind: str) -> None:
+        claim_dir = self.cwd / ".falsify" / name
+        claim_dir.mkdir(parents=True)
+        spec = _spec("0.8", 0.5)
+        # Inject `kind:` after the `claim:` line.
+        lines = spec.splitlines(keepends=True)
+        lines.insert(1, f"kind: {kind}\n")
+        (claim_dir / "spec.yaml").write_text("".join(lines))
+        for cmd in (["lock", name], ["run", name], ["verdict", name]):
+            self.assertEqual(_run(cmd, cwd=self.cwd).returncode, 0)
+
+    def _make_fail_with_kind(self, name: str, kind: str) -> None:
+        claim_dir = self.cwd / ".falsify" / name
+        claim_dir.mkdir(parents=True)
+        spec = _spec("0.3", 0.5)
+        lines = spec.splitlines(keepends=True)
+        lines.insert(1, f"kind: {kind}\n")
+        (claim_dir / "spec.yaml").write_text("".join(lines))
+        self.assertEqual(_run(["lock", name], cwd=self.cwd).returncode, 0)
+        self.assertEqual(_run(["run", name], cwd=self.cwd).returncode, 0)
+        _run(["verdict", name], cwd=self.cwd)
+
+    def test_score_default_scope_excludes_case_studies(self) -> None:
+        # Two dogfood PASS + one case_study FAIL.
+        # Default --scope dogfood ignores the case_study FAIL → 1.00.
+        self._make_pass_with_kind("p1", "dogfood")
+        self._make_pass_with_kind("p2", "dogfood")
+        self._make_fail_with_kind("cs1", "case_study")
+        result = _run(["score", "--format", "json"], cwd=self.cwd)
+        self.assertEqual(result.returncode, 0, msg=result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["score"], 1.0)
+        self.assertEqual(payload["pass"], 2)
+        self.assertEqual(payload["total"], 2)
+
+    def test_score_scope_all_includes_case_studies(self) -> None:
+        # --scope all does include the case_study FAIL → 2/3 = 0.667.
+        self._make_pass_with_kind("p1", "dogfood")
+        self._make_pass_with_kind("p2", "dogfood")
+        self._make_fail_with_kind("cs1", "case_study")
+        result = _run(
+            ["score", "--format", "json", "--scope", "all"], cwd=self.cwd,
+        )
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["total"], 3)
+        self.assertEqual(payload["pass"], 2)
+        self.assertEqual(payload["fail"], 1)
+
+    def test_score_scope_filters_by_kind(self) -> None:
+        # --scope case_study filters only case_study claims.
+        self._make_pass_with_kind("p1", "dogfood")
+        self._make_fail_with_kind("cs1", "case_study")
+        result = _run(
+            ["score", "--format", "json", "--scope", "case_study"], cwd=self.cwd,
+        )
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["total"], 1)
+        self.assertEqual(payload["fail"], 1)
+        self.assertEqual(payload["pass"], 0)
+
+    def test_score_missing_kind_defaults_to_dogfood(self) -> None:
+        # Plain spec (no `kind:` field) is counted as dogfood by default.
+        self._make_pass("p1")
+        result = _run(["score", "--format", "json"], cwd=self.cwd)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["pass"], 1)
+        self.assertEqual(payload["total"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

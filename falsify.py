@@ -1494,6 +1494,26 @@ def _read_metric_name_from_spec(claim_dir: Path) -> str | None:
     return None
 
 
+def _read_kind_from_spec(claim_dir: Path) -> str:
+    """Return the spec's optional ``kind`` field (default ``dogfood``).
+
+    The honesty score only counts claims that are about falsify itself
+    (``kind: dogfood``). External case studies (``kind: case_study``)
+    are excluded — their PASS/FAIL says nothing about whether falsify
+    is honest about its own properties.
+    """
+    try:
+        spec = yaml.safe_load((claim_dir / "spec.yaml").read_text())
+    except (yaml.YAMLError, OSError):
+        return "dogfood"
+    if not isinstance(spec, dict):
+        return "dogfood"
+    kind = spec.get("kind")
+    if isinstance(kind, str) and kind.strip():
+        return kind.strip()
+    return "dogfood"
+
+
 def _gather_stats_rows(base: Path, name_filter: str | None) -> list[dict]:
     now = datetime.now(timezone.utc)
     rows: list[dict] = []
@@ -2562,6 +2582,13 @@ def cmd_score(args: argparse.Namespace) -> int:
     ``fail``; ``warn`` exits ``0`` unless ``--strict``.
     """
     rows = _gather_stats_rows(FALSIFY_DIR, name_filter=None)
+    scope = getattr(args, "scope", "dogfood") or "dogfood"
+    if scope != "all":
+        rows = [
+            r
+            for r in rows
+            if _read_kind_from_spec(FALSIFY_DIR / r["name"]) == scope
+        ]
     score, counts = _compute_honesty_score(rows)
     threshold = args.threshold
     status = _score_status(score, threshold)
@@ -3788,6 +3815,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--strict",
         action="store_true",
         help="Treat 'warn' status as failure (exit 10)",
+    )
+    p_score.add_argument(
+        "--scope",
+        default="dogfood",
+        help=(
+            "Filter claims by spec 'kind' (default 'dogfood'). "
+            "Use 'all' to score every locked claim, or any other kind "
+            "string (e.g. 'case_study') to score only that kind."
+        ),
     )
     p_score.set_defaults(func=cmd_score)
 

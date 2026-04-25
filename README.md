@@ -3,7 +3,7 @@
 > **Pre-registration + CI for AI-agent claims.** Lock the claim and threshold with SHA-256 *before* running the experiment — or the result doesn't count.
 
 ![CI](https://github.com/sk8ordie84/falsify/actions/workflows/falsify.yml/badge.svg)
-![coverage](https://img.shields.io/badge/tests-514%20passing-brightgreen)
+![coverage](https://img.shields.io/badge/tests-518%20passing-brightgreen)
 ![honesty](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/sk8ordie84/falsify/main/.falsify/badge.json)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-blue.svg)

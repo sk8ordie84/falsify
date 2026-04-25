@@ -13,7 +13,7 @@ Every week another AI product claims a metric — "94% accuracy", "sub-200ms p95
 
 Falsify is a single-file Python CLI that applies scientific pre-registration to AI claims. `falsify lock` SHA-256 hashes a canonical YAML spec — metric, threshold, direction, dataset, metric-function reference — before the experiment runs. Any silent edit afterward changes the hash; the next run exits 3 and CI refuses to produce a verdict. The honest path is `lock --force`, which writes a new audit entry. Deterministic exit codes are the API: 0 PASS, 10 FAIL, 3 tampered, 11 guard violation.
 
-Built with Claude Opus 4.7 via Claude Code over three days: five skills, two forked-context subagents, three slash commands, one MCP server, 514 passing tests, and three self-dogfooded claims that re-verify falsify's own honesty on every CI run.
+Built with Claude Opus 4.7 via Claude Code over three days: five skills, two forked-context subagents, three slash commands, one MCP server, 518 passing tests, and three self-dogfooded claims (plus one external case study) that re-verify falsify's own honesty on every CI run.
 
 ## The problem
 
@@ -54,8 +54,8 @@ pre-registration looks like when AI writes the experiments.
 
 ## Scope delivered
 
-- 88 commits, 3 days of pair-programming with Claude Opus 4.7.
-- 514 tests across 65 files, all passing. 1 intentionally
+- 90+ commits, 3 days of pair-programming with Claude Opus 4.7.
+- 518 tests across 65 files, all passing. 1 intentionally
   skipped (Python 3.11-only pyproject parity).
 - 18 CLI subcommands — init, lock, run, verdict, guard, list,
   stats, diff, hook, doctor, version, export, verify, replay,
@@ -171,7 +171,7 @@ contract (sealed before the fact).
 ## Built with Opus 4.7
 
 Every line of code in this repo was written with Claude Opus 4.7
-via Claude Code over 3 days of pair-programming. 88 commits, 514
+via Claude Code over 3 days of pair-programming. 90+ commits, 518
 tests, one-shot composition of a CLI, a forked-context subagent
 layer, an MCP server, and a full documentation set. The
 development loop itself was a demonstration of what this project
