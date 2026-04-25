@@ -1,3 +1,9 @@
+> **ARCHIVED — completed 2026-04-24.**
+> All v3.1 → v3.3 production steps in this document are done.
+> The final cut is `docs/assets/v2/falsify_demo_final_v3.3.mp4`,
+> uploaded to <https://youtu.be/vVZTNeak5PA>.
+> Kept for historical reference of the production pipeline.
+
 # falsify — v3.1 FIX brief (target: 10/10)
 
 ## v3.1 user feedback — fix these FIRST, before anything else

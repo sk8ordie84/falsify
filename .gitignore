@@ -92,6 +92,11 @@ docs/assets/v2/falsify_demo_silent_*.mp4
 docs/assets/v2/falsify_demo_APPROVED_*.mp4
 docs/assets/v2/falsify_demo_final_with_vo.mp4
 docs/assets/v2/falsify_demo_final.mp4
+# 4K upscale + YouTube master (kept local, too large for git)
+docs/assets/v2/falsify_demo_final_v3.3_4k.mp4
+docs/assets/v2/falsify_demo_final_v3.3_apo8_prob4.mp4
+docs/assets/v2/falsify_demo_final_v3.3_*.mp4
+!docs/assets/v2/falsify_demo_final_v3.3.mp4
 docs/assets/slide_*.mp4
 docs/assets/slide_*.png
 docs/assets/demo_v*.mp4
