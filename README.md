@@ -28,11 +28,11 @@ Deterministic exit codes are the API. CI gates on them. Humans read the audit tr
 
 ---
 
-## 30-second demo
+## 90-second demo
 
 [**▶ Watch the 90-second demo on YouTube**](https://youtu.be/vVZTNeak5PA)
 
-*Lock a claim, run it, watch it PASS. Then tamper with the threshold and watch CI refuse to run. Full storyboard in [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md).*
+Lock a claim, run it, watch it PASS. Then tamper with the threshold and watch CI refuse to run. Full storyboard in [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md).
 
 ---
 
@@ -79,7 +79,7 @@ not rhetorical — and CI enforces it on every push.
   contradict a locked verdict.
 - A GitHub Actions workflow that re-verdicts every push and PR
   across Python 3.11 and 3.12.
-- **Four Claude Code skills** and **two forked-context subagents**
+- **Five Claude Code skills** and **two forked-context subagents**
   that draft specs, audit arbitrary text against the verdict log,
   review PR diffs for honesty violations, and keep the log itself
   fresh.
@@ -111,7 +111,7 @@ Consume falsify's hooks from your own repo:
 ```yaml
 repos:
   - repo: https://github.com/sk8ordie84/falsify
-    rev: v0.1.0
+    rev: main  # pin a tag (e.g. v0.1.1) once releases start
     hooks:
       - id: falsify-guard
       - id: falsify-doctor
@@ -358,8 +358,9 @@ ln -sf "$(pwd)/hooks/commit-msg" .git/hooks/commit-msg
   for the Brier score demo.
 - `hooks/commit-msg` — the guard hook.
 - `tests/` — `unittest` suite plus `smoke_test.sh` end-to-end driver.
-- `.claude/skills/` — the three in-session skills.
+- `.claude/skills/` — the five in-session skills.
 - `.claude/agents/` — the two forked-context subagents.
+- `.claude/commands/` — the three slash commands.
 - `.github/workflows/` — CI.
 
 ## Self-dogfooding
