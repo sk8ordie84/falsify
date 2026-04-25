@@ -22,11 +22,11 @@ choose the option that makes dishonesty more visible, not less.
 
 ## File layout
 
-- `falsify.py` — single-file CLI, 16 subcommands, stdlib + pyyaml.
+- `falsify.py` — single-file CLI, 18 subcommands, stdlib + pyyaml.
 - `hypothesis.schema.yaml` — spec schema + placeholder-marker list.
 - `mcp_server/` — optional Model Context Protocol server exposing
   the verdict store to Claude Desktop / Claude Code.
-- `.claude/skills/` — four in-session Claude skills (see below).
+- `.claude/skills/` — five in-session Claude skills (see below).
 - `.claude/agents/` — two forked-context subagents.
 - `managed_agents/` — Anthropic Console deployment manifests.
 - `claims/` — user-facing claim sources (spec + metric + data)

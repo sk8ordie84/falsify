@@ -17,7 +17,7 @@ user can follow it manually by ticking boxes.
 - [ ] Confirm result recorded somewhere (W, L, or special prize).
       This affects the PR copy in later steps, not the steps themselves.
 - [ ] Confirm `git status` clean on `main`, HEAD == `origin/main`.
-- [ ] Run `pytest -q` — must be `514 passed, 1 skipped`.
+- [ ] Run `pytest -q` — must be `518 passed, 1 skipped`.
 - [ ] Confirm `falsify_demo_final_v3.3_4k.mp4` plays (final sanity).
 - [ ] Confirm YouTube link `youtu.be/vVZTNeak5PA` still live.
 
