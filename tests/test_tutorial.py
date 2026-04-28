@@ -65,14 +65,12 @@ class TutorialTests(unittest.TestCase):
         self.assertIn("TUTORIAL.md", CONTRIBUTING.read_text())
 
     def test_changelog_mentions_tutorial(self) -> None:
+        # TUTORIAL.md must be referenced somewhere in CHANGELOG so its
+        # role in the docs is documented. Originally scoped to the
+        # [Unreleased] block, but releases now move content into
+        # [X.Y.Z] sections and that's still a valid mention.
         text = CHANGELOG.read_text()
-        m = re.search(
-            r"## \[Unreleased\](.*?)(?=\n## \[|\Z)",
-            text,
-            re.DOTALL,
-        )
-        self.assertIsNotNone(m, "Unreleased section not found")
-        self.assertIn("TUTORIAL", m.group(1))
+        self.assertIn("TUTORIAL", text)
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "falsify"
-version = "0.1.0"
+version = "0.1.1"
 description = "Pre-registration and CI for AI-agent claims — deterministic PASS or FAIL."
 readme = "README.md"
 license = { text = "MIT" }
@@ -27,7 +27,7 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/sk8ordie84/falsify"
+Homepage = "https://falsify.dev"
 Repository = "https://github.com/sk8ordie84/falsify"
 Issues = "https://github.com/sk8ordie84/falsify/issues"
 Changelog = "https://github.com/sk8ordie84/falsify/blob/main/CHANGELOG.md"

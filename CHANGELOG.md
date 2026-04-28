@@ -6,6 +6,27 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-04-28
+
+First public release on PyPI. `pip install falsify` now works.
+
+### Added
+
+- PyPI publication: `pip install falsify` installs the CLI globally.
+- `Homepage = "https://falsify.dev"` URL in `pyproject.toml`.
+
+### Changed
+
+- All public-facing references migrated from intermediate brand
+  surfaces to the project's own surfaces (landing page, repo
+  metadata).
+
+### Notes
+
+- Code unchanged from 0.1.0 — same 518 tests, same canonical
+  YAML hashing, same exit-code contract. This release exists
+  to make the CLI installable for non-developers.
+
 ### Documentation
 
 - `SUBMISSION.md` rewritten with current scope numbers, sharper
