@@ -3,9 +3,10 @@
 > **Pre-registration + CI for AI-agent claims.** Lock the claim and threshold with SHA-256 *before* running the experiment — or the result doesn't count.
 
 ![CI](https://github.com/sk8ordie84/falsify/actions/workflows/falsify.yml/badge.svg)
+![PyPI](https://img.shields.io/pypi/v/falsify?color=brightgreen&label=pypi)
 ![coverage](https://img.shields.io/badge/tests-518%20passing-brightgreen)
 ![honesty](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/sk8ordie84/falsify/main/.falsify/badge.json)
-![python](https://img.shields.io/badge/python-3.10%2B-blue)
+![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-blue.svg)
 
 > Code: MIT. "FALSIFY" name and chevron logo: ™ reserved. See [NOTICE](NOTICE) · [docs/COMMERCIAL.md](docs/COMMERCIAL.md).
@@ -88,12 +89,25 @@ not rhetorical — and CI enforces it on every push.
 ## Install
 
 ```bash
+pip install falsify
+```
+
+That's it. The `falsify` command is on your `PATH`, the docs site
+is at <https://falsify.dev>, and the project page is at
+<https://pypi.org/project/falsify>.
+
+Requires Python **3.11+**.
+
+### Development install (from the repo)
+
+```bash
+git clone https://github.com/sk8ordie84/falsify
+cd falsify
 pip install -e .
 ```
 
-After install, `falsify` is available as a command on your `PATH`
-— no `python3 falsify.py` prefix needed. The `-e` editable form is
-handy during development; drop the flag for a regular install.
+The `-e` editable form is for hacking on falsify itself — your
+edits to `falsify.py` take effect immediately without reinstalling.
 
 ### Docker
 
@@ -112,7 +126,7 @@ Consume falsify's hooks from your own repo:
 ```yaml
 repos:
   - repo: https://github.com/sk8ordie84/falsify
-    rev: main  # pin a tag (e.g. v0.1.1) once releases start
+    rev: v0.1.1
     hooks:
       - id: falsify-guard
       - id: falsify-doctor
