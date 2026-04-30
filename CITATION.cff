@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use falsify in academic work, please cite it as below."
+title: "falsify: pre-registration + CI for AI/ML accuracy claims"
+abstract: >
+  A single-file Python CLI that pre-registers AI/ML accuracy claims with
+  SHA-256 over canonical YAML. The metric, threshold, dataset hash, and
+  seed are committed to a hashed manifest before the experiment runs;
+  any silent edit afterwards causes the next run to exit 3 and refuse
+  to produce a verdict. The honest amendment path is `lock --force`,
+  which writes a new audit entry while preserving the previous hash.
+authors:
+  - name: "Studio-11"
+    website: "https://studio-11.co"
+type: software
+license: MIT
+repository-code: "https://github.com/sk8ordie84/falsify"
+url: "https://falsify.dev"
+version: 0.1.1
+date-released: 2026-04-28
+keywords:
+  - pre-registration
+  - reproducibility
+  - machine-learning
+  - audit-trail
+  - sha256
+  - mlops
+  - ai-safety
+  - ai-act
+  - claude-code
