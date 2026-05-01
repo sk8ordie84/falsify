@@ -1,0 +1,14 @@
+[package]
+name = "falsify-rs"
+version = "0.1.0"
+edition = "2021"
+description = "PRML v0.1 fourth reference implementation in Rust"
+license = "MIT"
+
+[dependencies]
+serde_json = { version = "1", features = ["preserve_order"] }
+sha2 = "0.10"
+
+[[bin]]
+name = "falsify-rs"
+path = "src/main.rs"
