@@ -149,9 +149,24 @@ producer:
   signature: <optional detached PGP or minisign signature>
 ```
 
-The `signature` field, when present, **MUST** be a signature over the manifest
-hash, not over the manifest contents. This permits signature verification
-without re-running canonicalization.
+The `signature` field, when present, **MUST** be a detached signature over the
+**canonical bytes** of the manifest (the same byte sequence whose SHA-256 is
+the manifest hash). This matches standard cryptographic practice (Sigstore
+detached signatures, minisign, PGP `--detach-sign`) and protects against
+a second-preimage scenario where an adversary substitutes a different
+canonical byte sequence yielding an identical hash: under hash-only signing,
+such a substitution would still verify; under bytes-signing, it does not.
+
+Verifiers MUST run canonicalization regardless (it is a prerequisite for the
+hash check in §5.2 step 1), so signing over the canonical bytes adds no
+redundant work. Implementations SHOULD store the signature in a sidecar
+file `<claim_id>.prml.sig` alongside the existing `<claim_id>.prml.sha256`
+sidecar. v0.2 normatively adopts this sidecar convention.
+
+> **v0.1 erratum (2026-05-02):** earlier drafts of this spec instructed
+> implementations to sign over the manifest hash. That recommendation is
+> withdrawn. Existing v0.1 implementations that signed over the hash should
+> re-sign over the canonical bytes before any regulatory submission.
 
 ---
 
@@ -308,6 +323,38 @@ does **NOT** protect against:
 
 Mitigations require external mechanisms: timestamping services (RFC 3161),
 public manifest registries, or signed dataset hosts.
+
+> **v0.1 erratum on selective publication (2026-05-02).** For regulatory use
+> — particularly EU AI Act Annex III high-risk system audits — selective
+> publication is the most likely real-world adversary, not the theoretical
+> ones above. The cryptographic protocol is satisfied by a producer who
+> publishes only Pass results; the regulatory purpose is not. v0.1
+> implementations used in compliance contexts MUST adopt one of the
+> following deployment-level mitigations, none of which v0.1 enforces but
+> all of which are compatible with the v0.1 manifest format:
+>
+> 1. **Publish-before-run discipline.** The manifest URL is committed to a
+>    public registry (a Git tag, an RFC 3161 timestamping authority, or an
+>    immutable S3 object with public-read) **before** the evaluation runs,
+>    not after. The registrar's timestamp becomes the publication-time
+>    proof; the manifest itself remains regulator-verifiable offline.
+>
+> 2. **Sequential `claim_id` allocation.** A producer's `claim_id`
+>    sequence is published as a monotonic chain (each `claim_id` is the
+>    successor of the previous, regardless of outcome). A regulator can
+>    detect missing entries in the sequence and demand explanation.
+>
+> 3. **External pre-registration anchor.** The manifest hash is committed
+>    to a third-party pre-registration registry (OSF, ClinicalTrials.gov
+>    pattern adapted, or an in-house immutable log) before any evaluation.
+>    The anchor is what the regulator verifies; the manifest is the
+>    provenance.
+>
+> v0.2 will normatively adopt option (3) for the `producer.tier:
+> high-risk` profile. v0.1 deployments choosing not to adopt one of these
+> three mitigations are NOT suitable for EU AI Act Article 12 evidence
+> submission and the producer SHOULD declare so in their accompanying
+> conformity-assessment documentation.
 
 ### 8.2 Hash Algorithm Agility
 
