@@ -78,6 +78,39 @@ function quoteSingle(s) {
   return "'" + s.replace(/'/g, "''") + "'";
 }
 
+// Match PyYAML's safe_dump float rendering. PyYAML inherits Python's
+// repr(float): magnitudes < 1e-4 or >= 1e16 use scientific notation; the
+// mantissa always carries a `.0` if otherwise integer-valued; the exponent
+// is zero-padded to at least two digits with explicit sign. JS's
+// Number.prototype.toString switches to scientific only at magnitudes
+// below ~1e-7 and uses no `.0` mantissa decoration, so for the small-float
+// regime we need an explicit formatter to reproduce PyYAML's bytes.
+//
+// Examples (PyYAML / desired output):
+//   0.85           -> "0.85"
+//   1.0            -> handled by the hint=='float' branch above (toFixed(1))
+//   0.000001       -> "1.0e-06"
+//   1.5e-7         -> "1.5e-07"
+//   1.234e-15      -> "1.234e-15"
+function pythonRepr(v) {
+  if (v === 0) return '0.0';
+  const abs = Math.abs(v);
+  if (abs < 1e-4 || abs >= 1e16) {
+    const s = v.toExponential();
+    const m = s.match(/^(-?)(\d+)(\.\d+)?e([+-])(\d+)$/);
+    if (m) {
+      const sign = m[1];
+      const intPart = m[2];
+      const fracPart = m[3] || '.0';
+      const expSign = m[4];
+      const expDigits = m[5].padStart(2, '0');
+      return `${sign}${intPart}${fracPart}e${expSign}${expDigits}`;
+    }
+    return s;
+  }
+  return v.toString();
+}
+
 function renderScalar(v, hint) {
   if (v === null || v === undefined) return 'null';
   if (typeof v === 'boolean') return v ? 'true' : 'false';
@@ -89,7 +122,7 @@ function renderScalar(v, hint) {
     }
     if (hint === 'float' && Number.isInteger(v)) return v.toFixed(1);
     if (Number.isInteger(v)) return v.toString();
-    return v.toString();
+    return pythonRepr(v);
   }
   if (typeof v === 'string') {
     return needsQuoting(v) ? quoteSingle(v) : v;

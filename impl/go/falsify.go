@@ -134,16 +134,38 @@ func quoteSingle(s string) string {
 var floatFields = map[string]bool{"threshold": true}
 
 // renderNumber takes a json.Number (raw string) and the field name, returning
-// the canonical byte representation. Float-typed fields with integer-valued
-// json.Number get a `.0` suffix to match PyYAML.
+// the canonical byte representation. For float-typed fields, the output must
+// match PyYAML's safe_dump float rendering exactly:
+//
+//   - integer-valued floats are rendered with at least one decimal place
+//     (e.g. `1` → `1.0`)
+//   - scientific-notation floats whose mantissa has no decimal place receive
+//     a `.0` injection before the exponent (e.g. `1e-06` → `1.0e-06`),
+//     matching Python's repr(float) which PyYAML inherits.
+//
+// JSON marshalled by Python's json.dumps already emits 2-digit zero-padded
+// exponents (`1e-06`, not `1e-6`), so no exponent-padding is required for the
+// v0.1 conformance vectors. Go's own encoding/json marshal does not pad,
+// however, so any input round-tripped through Go's marshaler would fail; the
+// canonicalizer expects raw json.Number strings preserved by UseNumber.
 func renderNumber(n json.Number, field string) string {
 	s := string(n)
-	if floatFields[field] {
-		// If the JSON wrote `1` for a float field, produce `1.0`.
-		if !strings.ContainsAny(s, ".eE") {
+	if !floatFields[field] {
+		return s
+	}
+	eIdx := strings.IndexAny(s, "eE")
+	if eIdx < 0 {
+		// No exponent.
+		if !strings.Contains(s, ".") {
 			return s + ".0"
 		}
 		return s
+	}
+	// Has exponent: ensure mantissa has a decimal place.
+	mantissa := s[:eIdx]
+	exponent := s[eIdx:]
+	if !strings.Contains(mantissa, ".") {
+		return mantissa + ".0" + exponent
 	}
 	return s
 }
