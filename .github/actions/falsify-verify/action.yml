@@ -26,12 +26,16 @@ inputs:
 outputs:
   manifests-checked:
     description: 'Number of PRML manifests verified.'
+    value: ${{ steps.verify.outputs.manifests-checked }}
   tampered-count:
     description: 'Number of manifests with hash mismatch.'
+    value: ${{ steps.verify.outputs.tampered-count }}
   falsified-count:
     description: 'Number of manifests whose claim verified to FAIL.'
+    value: ${{ steps.verify.outputs.falsified-count }}
   pass-count:
     description: 'Number of manifests whose claim verified to PASS.'
+    value: ${{ steps.verify.outputs.pass-count }}
 
 runs:
   using: 'composite'
