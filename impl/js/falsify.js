@@ -1,0 +1,404 @@
+#!/usr/bin/env node
+// falsify-js — second reference implementation of PRML v0.1
+//
+// Single file, ~400 LOC, zero runtime dependencies beyond Node.js stdlib.
+// Reproduces all 12 PRML v0.1 conformance vectors byte-for-byte.
+//
+// Spec:    https://spec.falsify.dev/v0.1
+// Vectors: https://github.com/sk8ordie84/falsify/tree/main/spec/test-vectors
+// Python:  https://github.com/sk8ordie84/falsify (reference implementation)
+//
+// Usage:
+//   falsify-js init <name>                    create skeleton manifest
+//   falsify-js lock <path>                    canonicalize + hash + write sidecar
+//   falsify-js verify <path> --observed <v>   verify hash + evaluate verdict
+//   falsify-js test-vectors <vectors.json>    run against conformance suite
+//
+// License: MIT.
+
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+// ─────────────────────────────────────────────────────────────────────────
+// Canonicalization
+// ─────────────────────────────────────────────────────────────────────────
+
+const YAML_INDICATORS = ['?', ':', ',', '[', ']', '{', '}', '#', '&', '*',
+                         '!', '|', '>', "'", '"', '%', '@', '`'];
+
+const PLAIN_BOOL_NULL = new Set([
+  'y','Y','yes','Yes','YES','n','N','no','No','NO',
+  'true','True','TRUE','false','False','FALSE',
+  'on','On','ON','off','Off','OFF',
+  'null','Null','NULL','~','',
+]);
+
+// Fields whose value MUST round-trip as a float even when integer-valued.
+// PyYAML preserves float-ness via its number type; JSON parsers in many
+// languages do not. The spec field type (float64) is the source of truth.
+const FLOAT_FIELDS = new Set(['threshold']);
+
+function looksLikeNumber(s) {
+  if (/^[-+]?(\.[0-9]+|[0-9]+(\.[0-9]*)?)([eE][-+]?[0-9]+)?$/.test(s)) return true;
+  if (/^[-+]?[0-9]+$/.test(s)) return true;
+  if (/^[-+]?0[xX][0-9a-fA-F]+$/.test(s)) return true;
+  if (/^[-+]?0[oO]?[0-7]+$/.test(s)) return true;
+  if (/^[-+]?\.(inf|Inf|INF)$/.test(s)) return true;
+  if (/^\.(nan|NaN|NAN)$/.test(s)) return true;
+  return false;
+}
+
+function looksLikeTimestamp(s) {
+  return /^\d{4}-\d{2}-\d{2}([Tt ]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/.test(s);
+}
+
+function needsQuoting(s) {
+  if (typeof s !== 'string') return false;
+  if (s.length === 0) return true;
+  if (PLAIN_BOOL_NULL.has(s)) return true;
+  if (looksLikeNumber(s)) return true;
+  if (looksLikeTimestamp(s)) return true;
+  const first = s[0];
+  if (YAML_INDICATORS.includes(first)) return true;
+  if (first === '-' && s.length > 1 && s[1] === ' ') return true;
+  if (first === ' ' || first === '\t') return true;
+  const last = s[s.length - 1];
+  if (last === ' ' || last === '\t') return true;
+  if (s.includes(': ')) return true;
+  if (s.includes(' #')) return true;
+  if (s.endsWith(':')) return true;
+  if (/[\x00-\x08\x0b-\x1f\x7f]/.test(s)) return true;
+  return false;
+}
+
+function quoteSingle(s) {
+  return "'" + s.replace(/'/g, "''") + "'";
+}
+
+function renderScalar(v, hint) {
+  if (v === null || v === undefined) return 'null';
+  if (typeof v === 'boolean') return v ? 'true' : 'false';
+  if (typeof v === 'bigint') return v.toString();
+  if (typeof v === 'number') {
+    if (!Number.isFinite(v)) {
+      if (Number.isNaN(v)) return '.nan';
+      return v > 0 ? '.inf' : '-.inf';
+    }
+    if (hint === 'float' && Number.isInteger(v)) return v.toFixed(1);
+    if (Number.isInteger(v)) return v.toString();
+    return v.toString();
+  }
+  if (typeof v === 'string') {
+    return needsQuoting(v) ? quoteSingle(v) : v;
+  }
+  throw new Error('renderScalar: unsupported value type ' + typeof v);
+}
+
+function renderMapping(obj, indent) {
+  const keys = Object.keys(obj).sort();
+  const lines = [];
+  const pad = ' '.repeat(indent);
+  for (const k of keys) {
+    const v = obj[k];
+    if (v !== null && typeof v === 'object' && !Array.isArray(v) && typeof v !== 'bigint') {
+      lines.push(`${pad}${k}:`);
+      lines.push(renderMapping(v, indent + 2));
+    } else if (Array.isArray(v)) {
+      lines.push(`${pad}${k}:`);
+      for (const item of v) {
+        const hint = FLOAT_FIELDS.has(k) ? 'float' : null;
+        if (item !== null && typeof item === 'object' && !Array.isArray(item)) {
+          const sub = renderMapping(item, indent + 2);
+          // Prefix first nested line with "- " instead of indent
+          const padNested = ' '.repeat(indent + 2);
+          const subLines = sub.split('\n');
+          subLines[0] = `${pad}- ${subLines[0].slice(padNested.length)}`;
+          for (let i = 1; i < subLines.length; i++) {
+            subLines[i] = subLines[i];
+          }
+          lines.push(subLines.join('\n'));
+        } else {
+          lines.push(`${pad}- ${renderScalar(item, hint)}`);
+        }
+      }
+    } else {
+      const hint = FLOAT_FIELDS.has(k) ? 'float' : null;
+      lines.push(`${pad}${k}: ${renderScalar(v, hint)}`);
+    }
+  }
+  return lines.join('\n');
+}
+
+function canonicalize(obj) {
+  return renderMapping(obj, 0) + '\n';
+}
+
+function manifestHash(obj) {
+  const bytes = canonicalize(obj);
+  return crypto.createHash('sha256').update(bytes, 'utf-8').digest('hex');
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Required-field validation (subset of v0.1)
+// ─────────────────────────────────────────────────────────────────────────
+
+const REQUIRED_FIELDS = [
+  'version', 'claim_id', 'created_at', 'metric',
+  'comparator', 'threshold', 'dataset', 'seed', 'producer',
+];
+const REQUIRED_DATASET = ['id', 'hash'];
+const REQUIRED_PRODUCER = ['id'];
+const VALID_COMPARATORS = new Set(['>=', '<=', '>', '<', '==']);
+
+function validateManifest(m) {
+  const errors = [];
+  for (const f of REQUIRED_FIELDS) {
+    if (!(f in m)) errors.push(`missing required field: ${f}`);
+  }
+  if (m.version !== 'prml/0.1') errors.push(`version must be "prml/0.1", got "${m.version}"`);
+  if (typeof m.threshold !== 'number' || !Number.isFinite(m.threshold)) {
+    errors.push(`threshold must be a finite number`);
+  }
+  if (m.comparator && !VALID_COMPARATORS.has(m.comparator)) {
+    errors.push(`comparator must be one of ${[...VALID_COMPARATORS].join(', ')}`);
+  }
+  if (m.dataset && typeof m.dataset === 'object') {
+    for (const f of REQUIRED_DATASET) {
+      if (!(f in m.dataset)) errors.push(`missing required field: dataset.${f}`);
+    }
+    if (m.dataset.hash && !/^[0-9a-f]{64}$/.test(m.dataset.hash)) {
+      errors.push(`dataset.hash must be 64 lowercase hex chars`);
+    }
+  }
+  if (m.producer && typeof m.producer === 'object') {
+    for (const f of REQUIRED_PRODUCER) {
+      if (!(f in m.producer)) errors.push(`missing required field: producer.${f}`);
+    }
+  }
+  return errors;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Verifier
+// ─────────────────────────────────────────────────────────────────────────
+
+const EXIT_PASS = 0;
+const EXIT_TAMPERED = 3;
+const EXIT_FAIL = 10;
+const EXIT_GUARD = 11;
+
+function evaluatePredicate(observed, comparator, threshold) {
+  switch (comparator) {
+    case '>=': return observed >= threshold;
+    case '<=': return observed <= threshold;
+    case '>':  return observed >  threshold;
+    case '<':  return observed <  threshold;
+    case '==': return observed === threshold;
+    default: throw new Error('invalid comparator: ' + comparator);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// CLI
+// ─────────────────────────────────────────────────────────────────────────
+
+function cmdInit(name) {
+  const dir = path.join('.falsify', name);
+  fs.mkdirSync(dir, { recursive: true });
+  const skeleton = {
+    version: 'prml/0.1',
+    claim_id: '01900000-0000-0000-0000-000000000000',
+    created_at: new Date().toISOString().replace(/\.\d+/, ''),
+    metric: 'accuracy',
+    comparator: '>=',
+    threshold: 0.0,
+    dataset: { id: 'PLACEHOLDER', hash: '0'.repeat(64) },
+    seed: 0,
+    producer: { id: 'PLACEHOLDER' },
+  };
+  const yamlText = canonicalize(skeleton);
+  fs.writeFileSync(path.join(dir, 'spec.yaml'), yamlText);
+  console.log(`init: wrote ${dir}/spec.yaml`);
+  console.log('Edit the placeholder values, then run: falsify-js lock ' + dir + '/spec.yaml');
+  return EXIT_PASS;
+}
+
+function loadManifest(filePath) {
+  // Minimal YAML loader for our canonical format only.
+  // We intentionally do NOT use a generic YAML parser: round-tripping
+  // through one risks breaking determinism. For load-and-canonicalize
+  // workflows, prefer the Python reference impl which uses PyYAML.
+  // For now we require JSON input to this tool; YAML support requires js-yaml.
+  if (filePath.endsWith('.json')) {
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(raw);
+  }
+  // Otherwise try js-yaml if available
+  try {
+    const yaml = require('js-yaml');
+    return yaml.load(fs.readFileSync(filePath, 'utf-8'));
+  } catch (e) {
+    throw new Error('YAML loading requires js-yaml: npm install js-yaml. Or pass a .json file.');
+  }
+}
+
+function cmdLock(filePath) {
+  const m = loadManifest(filePath);
+  const errors = validateManifest(m);
+  if (errors.length) {
+    console.error('lock: invalid manifest:');
+    errors.forEach(e => console.error('  - ' + e));
+    return EXIT_GUARD;
+  }
+  const canonical = canonicalize(m);
+  const hash = crypto.createHash('sha256').update(canonical, 'utf-8').digest('hex');
+  const sidecar = filePath.replace(/\.[^.]+$/, '') + '.prml.sha256';
+  fs.writeFileSync(sidecar, hash + '\n');
+  console.log(`locked: ${filePath}`);
+  console.log(`  canonical bytes: ${canonical.length}`);
+  console.log(`  sha256:          ${hash}`);
+  console.log(`  sidecar:         ${sidecar}`);
+  return EXIT_PASS;
+}
+
+function cmdVerify(filePath, observedStr) {
+  const m = loadManifest(filePath);
+  const errors = validateManifest(m);
+  if (errors.length) {
+    console.error('verify: invalid manifest:');
+    errors.forEach(e => console.error('  - ' + e));
+    return EXIT_GUARD;
+  }
+  const canonical = canonicalize(m);
+  const computed = crypto.createHash('sha256').update(canonical, 'utf-8').digest('hex');
+  const sidecar = filePath.replace(/\.[^.]+$/, '') + '.prml.sha256';
+  if (!fs.existsSync(sidecar)) {
+    console.error(`verify: sidecar not found: ${sidecar}`);
+    return EXIT_GUARD;
+  }
+  const claimedHash = fs.readFileSync(sidecar, 'utf-8').trim();
+  if (computed !== claimedHash) {
+    console.error('TAMPERED');
+    console.error(`  recorded:    ${claimedHash}`);
+    console.error(`  recomputed:  ${computed}`);
+    return EXIT_TAMPERED;
+  }
+  if (observedStr === undefined) {
+    console.log(`hash OK: ${computed}`);
+    console.log('(no --observed value given; predicate not evaluated)');
+    return EXIT_PASS;
+  }
+  const observed = parseFloat(observedStr);
+  if (!Number.isFinite(observed)) {
+    console.error('verify: --observed must be a finite number');
+    return EXIT_GUARD;
+  }
+  const ok = evaluatePredicate(observed, m.comparator, m.threshold);
+  if (ok) {
+    console.log(`PASS  metric=${m.metric}  observed=${observed}  ${m.comparator}  threshold=${m.threshold}`);
+    return EXIT_PASS;
+  } else {
+    console.log(`FAIL  metric=${m.metric}  observed=${observed}  NOT ${m.comparator}  threshold=${m.threshold}`);
+    return EXIT_FAIL;
+  }
+}
+
+function cmdTestVectors(vectorsPath) {
+  const raw = fs.readFileSync(vectorsPath, 'utf-8');
+  // Substitute large integers with sentinel-wrapped strings before JSON.parse
+  // so we can preserve precision (JS Number loses precision above 2^53).
+  const wrapped = raw.replace(/(?<=[\s:,\[])(\-?\d{16,})(?=[\s,\]\}])/g, '"__BIGINT__$1"');
+  const vectors = JSON.parse(wrapped);
+  function unwrap(o) {
+    if (typeof o === 'string' && o.startsWith('__BIGINT__')) return BigInt(o.slice(10));
+    if (Array.isArray(o)) return o.map(unwrap);
+    if (o !== null && typeof o === 'object') {
+      const out = {};
+      for (const k of Object.keys(o)) out[k] = unwrap(o[k]);
+      return out;
+    }
+    return o;
+  }
+  for (const v of vectors) v.input = unwrap(v.input);
+
+  let pass = 0, fail = 0;
+  for (const v of vectors) {
+    const produced = canonicalize(v.input);
+    const producedHash = crypto.createHash('sha256').update(produced, 'utf-8').digest('hex');
+    const ok = produced === v.canonical && producedHash === v.hash;
+    if (ok) {
+      pass++;
+      console.log(`PASS  ${v.id}  ${v.title}`);
+    } else {
+      fail++;
+      console.log(`FAIL  ${v.id}  ${v.title}`);
+      const a = v.canonical, b = produced;
+      let i = 0;
+      while (i < a.length && i < b.length && a[i] === b[i]) i++;
+      console.log(`        first diff @ char ${i}`);
+      console.log(`        expected: ${JSON.stringify(a.slice(Math.max(0,i-10), i+30))}`);
+      console.log(`        produced: ${JSON.stringify(b.slice(Math.max(0,i-10), i+30))}`);
+    }
+  }
+  console.log(`\nResult: ${pass}/${vectors.length} vectors passed.`);
+  return fail === 0 ? EXIT_PASS : EXIT_FAIL;
+}
+
+function usage() {
+  process.stderr.write(`falsify-js — PRML v0.1 reference implementation (Node.js)
+
+Commands:
+  init <name>                            create skeleton in .falsify/<name>/
+  lock <spec.json|spec.yaml>             canonicalize, hash, write sidecar
+  verify <spec.json> [--observed <v>]    verify hash; if --observed, evaluate
+  test-vectors <vectors.json>            run conformance suite
+  hash <spec.json>                       print canonical SHA-256 only
+
+Exit codes: 0=PASS, 3=TAMPERED, 10=FAIL, 11=GUARD
+Spec:    https://spec.falsify.dev/v0.1
+`);
+  return EXIT_GUARD;
+}
+
+function cmdHash(filePath) {
+  const m = loadManifest(filePath);
+  console.log(manifestHash(m));
+  return EXIT_PASS;
+}
+
+function main(argv) {
+  const args = argv.slice(2);
+  if (args.length === 0) return usage();
+  const cmd = args[0];
+  switch (cmd) {
+    case 'init':         return cmdInit(args[1] || 'default');
+    case 'lock':         return cmdLock(args[1]);
+    case 'verify': {
+      const idx = args.indexOf('--observed');
+      const observed = idx >= 0 ? args[idx + 1] : undefined;
+      return cmdVerify(args[1], observed);
+    }
+    case 'test-vectors': return cmdTestVectors(args[1]);
+    case 'hash':         return cmdHash(args[1]);
+    case '-h':
+    case '--help':       return usage() === EXIT_GUARD ? EXIT_PASS : EXIT_PASS;
+    default:             return usage();
+  }
+}
+
+if (require.main === module) {
+  process.exit(main(process.argv));
+}
+
+// Programmatic API for embedders
+module.exports = {
+  canonicalize,
+  manifestHash,
+  validateManifest,
+  evaluatePredicate,
+  needsQuoting,
+  EXIT_PASS, EXIT_TAMPERED, EXIT_FAIL, EXIT_GUARD,
+};

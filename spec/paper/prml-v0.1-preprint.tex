@@ -1,0 +1,694 @@
+% PRML v0.1 — arXiv preprint
+% Author: Studio-11 (Independent)
+% Correspondence: hello@studio-11.co
+% Spec: https://spec.falsify.dev/v0.1
+% Code: https://github.com/sk8ordie84/falsify
+% License: CC BY 4.0
+%
+% Build: pdflatex prml-v0.1-preprint.tex (twice for refs)
+% No external bibliography; references inlined for portability.
+
+\documentclass[11pt, a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{abstract}
+\usepackage{authblk}
+\usepackage{caption}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue!50!black,
+  citecolor=blue!50!black,
+  pdftitle={Pre-Registered ML Manifests: A Content-Addressed Format for Verifiable Evaluation Claims},
+  pdfauthor={Studio-11 (Independent)},
+  pdfkeywords={machine learning, evaluation, reproducibility, pre-registration, cryptographic verification, EU AI Act}
+}
+
+\lstdefinelanguage{yaml}{
+  keywords={true,false,null,version,claim_id,created_at,metric,comparator,threshold,dataset,id,hash,seed,producer,prior_hash,model,uri,signature,notes,compute_envelope},
+  keywordstyle=\color{blue!60!black}\bfseries,
+  basicstyle=\ttfamily\small,
+  stringstyle=\color{green!40!black},
+  commentstyle=\color{gray}\itshape,
+  morecomment=[l]{\#},
+  morestring=[b]",
+  morestring=[b]',
+  literate={:}{{\textcolor{black}{:}}}{1}{-}{{\textcolor{black}{-}}}{1}
+}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  xleftmargin=0.5em,
+  xrightmargin=0.5em,
+  framexleftmargin=0.5em,
+  framexrightmargin=0.5em,
+}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.4ex plus 0.5ex minus .2ex}{1.0ex plus .2ex}
+\titlespacing*{\subsection}{0pt}{1.0ex plus 0.4ex minus .2ex}{0.7ex plus .2ex}
+
+\title{\bfseries Pre-Registered ML Manifests:\\
+A Content-Addressed Format for Verifiable Evaluation Claims}
+
+\author[1]{Studio-11}
+\affil[1]{Independent. Correspondence: \href{mailto:hello@studio-11.co}{hello@studio-11.co}\\
+Spec: \href{https://spec.falsify.dev/v0.1}{spec.falsify.dev/v0.1} \quad
+Code: \href{https://github.com/sk8ordie84/falsify}{github.com/sk8ordie84/falsify}}
+
+\date{Working draft v0.1 --- \today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Most published machine-learning accuracy numbers are unfalsifiable in practice. The metric, threshold, dataset slice, and random seed are reported \emph{after} the experiment, leaving no cryptographic record of what was committed \emph{before} it. Reviewers, auditors, and downstream users cannot, even in principle, distinguish honest reporting from threshold tuning, slice selection, or silent re-runs. We define \textbf{PRML} (Pre-Registered ML Manifest), a content-addressed YAML serialization that binds an evaluation claim --- metric, comparator, threshold, dataset hash, seed, producer --- to a SHA-256 digest computed over a canonical byte sequence before the experiment runs. A verifier with the manifest, the dataset, and the model can independently recompute the digest, execute the claim, and emit a deterministic verdict (\texttt{PASS}, \texttt{FAIL}, or \texttt{TAMPERED}). Tampering produces a detectable hash mismatch; honest amendments are recorded in a forward-only chain via a \texttt{prior\_hash} link. A reference implementation in 1{,}287 lines of Python (\texttt{falsify}, MIT) demonstrates the format end-to-end, with twelve conformance test vectors locking the v0.1 hash contract. We map PRML fields directly to EU AI Act Articles 12, 17, 18, and 50, to NIST AI RMF Govern/Measure functions, and to ISO/IEC 42001:2023 documented-information clauses. PRML is to ML evaluation claims what content addressing is to source code: a primitive, not a product.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+\subsection{The unfalsifiability problem}
+
+Consider a model card that reports \texttt{accuracy = 0.913} on \texttt{ImageNet val}. Which val? Which threshold did the team commit to before they ran the eval? Which random seed? How many seeds did they try before this one? Did they remove twelve examples that they later judged mislabeled? None of these questions can be answered from the published artifact. The reader can only ask the authors, and the authors can only report what they remember. A subsequent reader cannot distinguish what they remember from what they wished they had done.
+
+This is not a problem about a particular model card or a particular research group. It is a structural problem about how ML accuracy claims are constructed and disseminated. A claim of the form \emph{``our model achieves $X\%$ on benchmark $B$''} can be wrong, in published form, in at least the following ways, none of which leave a forensic trace:
+
+\begin{enumerate}[leftmargin=2em, itemsep=0.3em]
+  \item \textbf{Threshold drift.} The deploy threshold is chosen \emph{after} observing the model's behaviour on the test set, and reported as if it had been the original target.
+  \item \textbf{Slice selection.} The evaluation set is filtered after results are observed --- ``those twelve examples were mislabeled,'' ``that subset is out of scope,'' ``we excluded the long-context cases.''
+  \item \textbf{Silent re-runs.} Five random seeds were tried; only the seed that produced the best number was reported.
+  \item \textbf{Metric ambiguity.} ``F1'' without specifying micro vs.\ macro. ``Accuracy'' without specifying top-$k$. ``\texttt{pass@1}'' without specifying decoding temperature. The disambiguation happens in the reader's head, not on the page.
+  \item \textbf{Dataset drift.} The benchmark hosted at the canonical URL changes between the experiment date and the publication date; the team did not pin the bytes.
+\end{enumerate}
+
+Each of these is consistent with current best-practice reporting --- model cards~\cite{mitchell2019modelcards}, datasheets~\cite{gebru2018datasheets}, results tables, README-style reproducibility checklists. None of them produce a record from which a third party could detect the failure mode.
+
+\subsection{Why pre-registration, why now}
+
+Adjacent fields solved this problem. Clinical trials adopted pre-registration in 2007 (\href{https://clinicaltrials.gov}{ClinicalTrials.gov})~\cite{zarin2011clinicaltrials}; psychology adopted it in 2013 (Open Science Framework)~\cite{nosek2018preregistration, chambers2013registered}; economics, the same year, with the AEA registry. None of these systems uses cryptographic binding --- they rely on a trusted timestamping registrar. Machine learning has no equivalent, neither cryptographic nor registrar-based. The closest existing structure is the ML Reproducibility Challenge~\cite{pineau2021reproducibility}, which is an excellent post-hoc effort but does not change the publication-time commitment surface.
+
+The 2026 regulatory window changes the calculus. EU Regulation 2024/1689, the AI Act, enters force in stages. Article 12 mandates automatic logging of evaluation events for high-risk systems. Article 17 requires documented quality-management records, including evaluation records. Article 18 requires ten-year retention of technical documentation. Article 50 imposes transparency obligations on providers of general-purpose AI systems. NIST AI RMF v1.0~\cite{nist2023airmf} references content-addressed audit trails as a recommended control. ISO/IEC 42001:2023~\cite{iso420012023} mandates documented-information practices that PRML satisfies.
+
+In other words: there is now a regulatory deadline by which \emph{``we have a tradition of reporting these numbers honestly''} stops being a sufficient answer. Cryptographic pre-registration becomes the cheapest way to satisfy the named obligations.
+
+\subsection{Contributions}
+
+This paper makes the following contributions:
+
+\begin{enumerate}[leftmargin=2em, itemsep=0.3em]
+  \item A formal specification (PRML v0.1)~\cite{prml2026spec} written in RFC 2119 normative language, defining a YAML 1.2 strict subset and a deterministic canonicalization that produces a unique byte sequence per logical manifest.
+  \item A SHA-256 binding that locks the manifest before experiment execution, enabling offline tamper detection by any third party with no access to the producer's infrastructure.
+  \item A forward-only audit chain protocol (\texttt{prior\_hash} linkage) that supports honest amendments without breaking provenance.
+  \item A threat model identifying six adversaries, mapping each to PRML coverage (full, partial, out of scope).
+  \item A regulatory mapping of PRML fields to EU AI Act Articles 12, 17, 18, 50, 72, and 73; to NIST AI RMF Govern, Measure, and Manage functions; and to ISO/IEC 42001:2023 clauses 7.5, 8.4, and 9.2.
+  \item A reference implementation \texttt{falsify} (single-file Python, 1{,}287 LOC, MIT license) and a public conformance suite of twelve test vectors that any second implementation must reproduce exactly to claim conformance.
+\end{enumerate}
+
+\subsection{Non-goals}
+
+PRML does not establish whether a metric is \emph{correct}; it establishes that it was \emph{committed before being tested}. PRML does not prove dataset \emph{legitimacy} (who labeled it, with what bias); it proves that the evaluator used the bytes they claimed. PRML does not replace model cards, datasheets, or red-team reports; it underpins them. The position is precise: PRML is a cryptographic floor, not a substitute for any layer above it.
+
+\section{Background and related work}
+\label{sec:related}
+
+\subsection{Pre-registration in adjacent empirical fields}
+
+Pre-registration in the clinical-trials sense means: the protocol --- primary outcome, sample size, analysis plan --- is filed with a registrar before patient recruitment begins. The registrar timestamps the filing. A subsequent publication that deviates from the protocol must declare the deviation. ClinicalTrials.gov was mandated by the FDA Amendments Act of 2007. AllTrials, launched in 2013, escalated the requirement to a campaign~\cite{goldacre2014alltrials}.
+
+In psychology, Registered Reports~\cite{chambers2013registered} extend this idea: the protocol is peer-reviewed before data collection, and the reviewing journal commits to publication regardless of outcome. The Open Science Framework formalised registration infrastructure across fields~\cite{nosek2018preregistration}. The AEA Randomized Controlled Trials Registry, also from 2013, plays the same role for economics.
+
+What none of these systems do is cryptographically bind the protocol to its bytes. They rely on a registrar (a trusted third party) to timestamp and store the document. PRML differs in that the binding is local --- a SHA-256 digest --- and verifiable by anyone with the manifest, with no need to trust a registrar.
+
+\subsection{Reproducibility infrastructure in machine learning}
+
+Model cards~\cite{mitchell2019modelcards} and datasheets~\cite{gebru2018datasheets} are post-hoc disclosure formats. They describe what was built; they do not bind what was committed. Holistic Evaluation of Language Models (HELM)~\cite{liang2023helm} provides a standardized harness across benchmarks, but the choice of metric, prompts, and decoding still occurs at evaluation time. Papers with Code aggregates leaderboards but does not require pre-commitment. The ML Reproducibility Challenge~\cite{pineau2021reproducibility} is community-driven post-hoc replication --- valuable, but downstream of the publication.
+
+The gap PRML occupies is the intersection of three properties: (i) cryptographic, not registrar-trusted; (ii) pre-experimental, not post-hoc; (iii) ML-evaluation-shaped, not generic. To our knowledge no existing artifact in the published or industry literature occupies this intersection.
+
+\subsection{Content-addressed systems}
+
+Git~\cite{git2005} popularised content addressing for source code. IPFS~\cite{benet2014ipfs} extended it to a peer-to-peer file system. In-toto attestations~\cite{torresarias2019intoto} apply the pattern to software supply-chain provenance, and SLSA provenance levels formalise it for build pipelines. PRML is to ML evaluation claims what SLSA is to build artifacts: a content-addressed record of \emph{what was committed when}, by whom, against which inputs.
+
+\subsection{Regulatory context}
+
+The EU AI Act (Regulation 2024/1689) entered force on 1 August 2024 with staggered applicability. Articles 9--17 govern high-risk AI systems. Article 12 requires automatic logging of events relevant to risk identification. Article 17 mandates a quality management system with documented evaluation procedures. Article 18 requires ten-year retention of technical documentation. NIST AI RMF v1.0 (2023) names accountability mechanisms, evaluation metrics, and recurrent monitoring as core functions. ISO/IEC 42001:2023 standardises AI management systems with documented-information requirements.
+
+All three frameworks name audit-grade evaluation logging as a control. None mandate a canonical format. PRML is one such format, designed to satisfy named obligations directly with arithmetic verification rather than process attestation.
+
+\section{The PRML format}
+\label{sec:format}
+
+\subsection{Design principles}
+
+The format follows five principles:
+
+\begin{enumerate}[leftmargin=2em, itemsep=0.3em]
+  \item \textbf{Plain text artifact.} No binary, no domain-specific language, no compiler. YAML 1.2 strict subset: block style only, no flow collections, no anchors, no aliases, no tags, no comments. Reviewable by humans, diffable by \texttt{git}, parseable by any YAML 1.2 conformant library.
+  \item \textbf{Deterministic canonicalization.} One logical mapping with the required fields produces exactly one canonical UTF-8 byte sequence. Lexicographic key ordering at every level; two-space indentation; LF line terminators; no trailing whitespace; explicit double-quoted strings.
+  \item \textbf{Pre-experimental binding.} The hash is computed and committed before the model is run against the dataset. A verifier rejects any post-experiment edit by detecting the resulting hash mismatch.
+  \item \textbf{Single primitive, no protocol dependencies.} SHA-256 only. The format must run on a Raspberry Pi, in an air-gapped lab, in a regulator's office, in 2046, with the same correctness guarantees.
+  \item \textbf{Forward-only amendment.} Honest changes produce a new manifest linked to the prior via the \texttt{prior\_hash} field. The chain is the audit log; no overwrite is ever required to preserve history.
+\end{enumerate}
+
+\subsection{Required fields}
+
+The minimum conformant manifest contains exactly these fields:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}p{3.0cm} p{2.0cm} p{8.5cm}@{}}
+\toprule
+Field & Type & Constraint \\
+\midrule
+\texttt{version} & string & MUST equal \texttt{prml/0.1} \\
+\texttt{claim\_id} & UUIDv7~\cite{rfc9562} & RFC 9562 compliant; lowercase; canonical hyphenation \\
+\texttt{created\_at} & string & RFC 3339 UTC timestamp; \texttt{Z} suffix; no offset \\
+\texttt{metric} & string & enum or URI: \texttt{accuracy}, \texttt{f1\_micro}, \texttt{f1\_macro}, \texttt{auroc}, \texttt{mae}, \texttt{rmse}, \texttt{bleu}, \texttt{rouge\_l}, \texttt{exact\_match}, \texttt{pass@}$k$ for $k \in \{1,2,5,10,100\}$, or absolute URI \\
+\texttt{comparator} & string & one of \texttt{>=}, \texttt{<=}, \texttt{>}, \texttt{<}, \texttt{==} \\
+\texttt{threshold} & float64 & finite, non-NaN; serialized via shortest round-trip IEEE 754 \\
+\texttt{dataset.id} & string & DNS-style identifier; lowercase \\
+\texttt{dataset.hash} & hex string & lowercase SHA-256 of dataset bytes; 64 hex chars \\
+\texttt{seed} & uint64 & inclusive $0 \leq \texttt{seed} \leq 2^{64}-1$ \\
+\texttt{producer.id} & string & DNS-style identifier; lowercase \\
+\bottomrule
+\end{tabular}
+\caption{Required fields in PRML v0.1.}
+\label{tab:required-fields}
+\end{table}
+
+\subsection{Example: a minimal manifest}
+
+\begin{lstlisting}[language=yaml, caption={Minimal PRML v0.1 manifest, eight required fields, canonical form.}]
+version: "prml/0.1"
+claim_id: "01900000-0000-7000-8000-000000000000"
+created_at: "2026-05-01T12:00:00Z"
+comparator: ">="
+metric: "accuracy"
+threshold: 0.85
+dataset:
+  hash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  id: "imagenet-val-2012"
+seed: 42
+producer:
+  id: "studio-11.co"
+\end{lstlisting}
+
+The canonical UTF-8 encoding of this document, hashed with SHA-256, produces a 64-character hex digest. The digest is stored alongside the manifest in a sidecar file \texttt{<claim\_id>.prml.sha256} containing one line: the hex digest followed by an LF.
+
+\subsection{Canonical serialization grammar}
+
+The canonicalization defines a partial function from logical YAML mappings (with the required fields) to UTF-8 byte sequences. Key invariants:
+
+\begin{itemize}[leftmargin=2em, itemsep=0.2em]
+  \item \textbf{Block style only.} No flow collections (\texttt{[a, b]}, \texttt{\{x: y\}}). All sequences and mappings serialise in indented block form.
+  \item \textbf{Lexicographic key order.} At every nesting depth, keys are sorted by Unicode code-point order. Insertion order in the input is irrelevant.
+  \item \textbf{Two-space indentation.} No tabs.
+  \item \textbf{LF terminators.} \texttt{0x0A} only. CR or CRLF inputs are normalised on parse, but the canonical output uses LF.
+  \item \textbf{Explicit double-quoted strings.} All string values --- including those that would otherwise be unquoted in YAML --- are double-quoted in the canonical form. Escapes: \texttt{\textbackslash\textbackslash}, \texttt{\textbackslash"}, \texttt{\textbackslash n}, \texttt{\textbackslash t}, \texttt{\textbackslash uXXXX} for non-ASCII.
+  \item \textbf{IEEE 754 shortest round-trip.} \texttt{threshold} and other floats serialise via the shortest representation that round-trips back to the same bit pattern (Ryu / Grisu3 family).
+  \item \textbf{No comments, anchors, aliases, or tags.}
+\end{itemize}
+
+A formal grammar in ABNF appears in Appendix~\ref{app:abnf}. Conformance is judged by behaviour against the test vectors in \S\ref{sec:conformance}, not against the grammar in isolation.
+
+\subsection{Hash binding}
+
+\[
+h := \mathrm{lowercasehex}\big( \mathrm{SHA\text{-}256}( \mathrm{canonical\_bytes}(M) ) \big)
+\]
+
+The hash $h$ is the manifest's identity. Two manifests with the same logical content produce the same canonical bytes and therefore the same hash. Two manifests differing in any byte of canonical content --- including a single bit-flip in \texttt{threshold} from \texttt{0.85} to \texttt{0.86} --- produce different hashes. This is the second-preimage resistance of SHA-256~\cite{nist2015fips180} applied at the manifest level.
+
+\subsection{Optional fields}
+
+The following fields MAY appear in a manifest. Their presence does not affect required-field validation; their absence does not invalidate a manifest.
+
+\begin{itemize}[leftmargin=2em, itemsep=0.2em]
+  \item \texttt{model.id}, \texttt{model.hash}, \texttt{model.uri} --- bind the manifest to a specific model artifact.
+  \item \texttt{dataset.uri} --- canonical URL for the dataset bytes.
+  \item \texttt{compute\_envelope} --- structured description of compute conditions (precision, hardware class, software stack hash). Out of scope for verdict computation in v0.1.
+  \item \texttt{producer.signature} --- detached signature over the canonical bytes by \texttt{producer.id}'s key. Optional in v0.1; mandatory for high-stakes claims in v0.2.
+  \item \texttt{prior\_hash} --- the hash of the manifest this one amends. Forms the audit chain.
+  \item \texttt{notes} --- free-text rationale for the claim or amendment. Counts toward the canonical bytes; tampering with notes invalidates the hash.
+\end{itemize}
+
+\section{Verification protocol}
+\label{sec:verify}
+
+\subsection{The verifier}
+
+A PRML verifier is any program that performs the following six steps in order:
+
+\begin{enumerate}[leftmargin=2em, itemsep=0.2em]
+  \item Read manifest file $M$ and sidecar hash $h_{\text{sidecar}}$.
+  \item Compute $\mathrm{canonical\_bytes}(M)$ and $h_{\text{recomputed}} = \mathrm{SHA\text{-}256}(\mathrm{canonical\_bytes}(M))$.
+  \item If $h_{\text{recomputed}} \neq h_{\text{sidecar}}$, emit \texttt{TAMPERED}, exit code 3.
+  \item Load the dataset by \texttt{dataset.id}; compute its SHA-256; verify equality to \texttt{dataset.hash}. If unequal, emit \texttt{GUARD}, exit code 11.
+  \item Execute the metric computation under \texttt{seed} against the model; obtain observed value $v$.
+  \item Emit \texttt{PASS} (exit 0) iff the predicate $v \mathbin{\texttt{comparator}} \texttt{threshold}$ holds; otherwise emit \texttt{FAIL} (exit 10).
+\end{enumerate}
+
+\subsection{Exit code semantics}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}c l p{8cm}@{}}
+\toprule
+Code & Verdict & Compliance signal \\
+\midrule
+0 & \texttt{PASS} & Claim is verified. The observed metric satisfies the comparator-threshold predicate under the bound seed. \\
+10 & \texttt{FAIL} & Claim is falsified. The observed metric does not satisfy the predicate. The manifest itself remains untampered. \\
+3 & \texttt{TAMPERED} & Manifest hash mismatch. The recomputed canonical hash does not equal the sidecar hash. No verdict on the metric is emitted. \\
+11 & \texttt{GUARD} & Input precondition violated --- missing dataset, dataset hash mismatch, missing model, malformed manifest. \\
+\bottomrule
+\end{tabular}
+\caption{PRML v0.1 exit codes and their compliance semantics.}
+\label{tab:exit-codes}
+\end{table}
+
+\subsection{Determinism requirements}
+
+PRML assumes that the same manifest plus the same dataset bytes plus the same model plus the same RNG seed produce the same observed metric value. Bit-level floating-point determinism is \emph{not} assumed across hardware classes; the verifier may declare a tolerance separately. v0.1 does not specify a tolerance field; v0.2 will introduce one. In the absence of a tolerance, the verdict is computed against bit-exact equality, which is appropriate for evaluation harnesses that produce deterministic outputs (the typical case for offline benchmarks at fixed temperature with fixed decoding).
+
+\subsection{Forward-only amendment chain}
+
+When the producer needs to revise a claim --- for example, after discovering twelve mislabeled examples in the dataset --- the revision is recorded as a new manifest $M_2$ with \texttt{prior\_hash} set to $h_1 = \mathrm{hash}(M_1)$. The chain is built recursively:
+
+\[
+\mathrm{chainhash} := \mathrm{SHA\text{-}256}\big( \mathrm{canonical\_bytes}(M_1) \,\|\, \mathrm{canonical\_bytes}(M_2) \,\|\, \cdots \,\|\, \mathrm{canonical\_bytes}(M_n) \big)
+\]
+
+Once $h_i$ is published, $h_i$ is immutable. A later $M_{i+1}$ never overwrites $M_i$; it appends. The amendment record \emph{is} the audit log. When a regulator or reviewer asks \emph{``what was committed when, and why was it changed?''} the answer is one chain hash, and from that chain the full sequence of manifests and rationale (in \texttt{notes}) is recoverable.
+
+\section{Conformance: the v0.1 test-vector contract}
+\label{sec:conformance}
+
+\subsection{Why test vectors}
+
+The most reasonable skeptical question about a content-addressed format is: \emph{what guarantees that two implementations produce the same canonical bytes for the same input?} Specifications written in English admit ambiguity. Test vectors close that gap by specifying, for each input, the exact UTF-8 byte sequence that any conformant canonicalizer MUST produce, and the lowercase hex SHA-256 of those bytes.
+
+\subsection{The v0.1 vector set}
+
+PRML v0.1 ships with twelve vectors (\texttt{TV-001} through \texttt{TV-012}). Each vector is a JSON object:
+
+\begin{lstlisting}[caption={A single test vector entry.}]
+{
+  "id": "TV-001",
+  "description": "Minimal valid manifest with required fields only.",
+  "input": { /* logical YAML mapping */ },
+  "canonical": "version: \"prml/0.1\"\nclaim_id: ...",
+  "hash": "1a3466cc08ee..."
+}
+\end{lstlisting}
+
+The vector set exercises the following properties:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}l l@{}}
+\toprule
+Vector & Property exercised \\
+\midrule
+TV-001 & Minimal valid manifest (required fields only). \\
+TV-002 & Key-ordering invariance: random insertion order MUST yield same hash as TV-001. \\
+TV-003 & Single-bit content sensitivity: \texttt{0.85} vs \texttt{0.86} MUST yield different hashes. \\
+TV-004 & Optional fields populated: \texttt{model.id}, \texttt{model.hash}, \texttt{dataset.uri}. \\
+TV-005 & Unicode in \texttt{producer.id} (Latin Extended-A, CJK). \\
+TV-006 & Maximum seed value $2^{64} - 1$. \\
+TV-007 & Minimum seed value $0$. \\
+TV-008 & Equality comparator (\texttt{==}) with integer-valued threshold. \\
+TV-009 & Amendment with \texttt{prior\_hash} linkage to TV-001. \\
+TV-010 & \texttt{pass@}$k$ metric for code generation benchmarks. \\
+TV-011 & AUROC with strict comparator (\texttt{>}). \\
+TV-012 & Regression metric (MAE) with \texttt{<=} comparator. \\
+\bottomrule
+\end{tabular}
+\caption{The twelve PRML v0.1 conformance test vectors.}
+\label{tab:vectors}
+\end{table}
+
+\subsection{Conformance criterion}
+
+A second implementation in any language (Rust, Go, TypeScript, C++, Java, etc.) is conformant if and only if:
+
+\begin{enumerate}[leftmargin=2em, itemsep=0.2em]
+  \item For every vector $v_i$, its canonicalizer produces exactly $v_i.\texttt{canonical}$ from $v_i.\texttt{input}$, byte-for-byte.
+  \item For every vector $v_i$, $\mathrm{SHA\text{-}256}(v_i.\texttt{canonical}) = v_i.\texttt{hash}$.
+\end{enumerate}
+
+The reference implementation, \texttt{falsify}, ships with twenty-eight unittest assertions in CI that lock in the v0.1 hash contract; any code change that breaks a vector forces a v0.2 specification bump. The vectors are licensed CC BY 4.0 and reproducible with a single Python script.
+
+\section{Threat model}
+\label{sec:threat}
+
+\subsection{Adversaries and coverage}
+
+We enumerate six adversaries against an evaluation pipeline that uses PRML, and classify PRML's coverage of each.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}c p{4cm} p{4cm} l@{}}
+\toprule
+\# & Adversary & Goal & Coverage \\
+\midrule
+1 & Honest researcher, post-hoc threshold tuning & Inflate reported accuracy by adjusting \texttt{threshold} after seeing results & \textbf{Full} (any change breaks hash) \\
+2 & Adversarial reviewer, retroactive-edit accusation & Claim a published manifest was changed after the fact & \textbf{Full} (\texttt{prior\_hash} chain disambiguates) \\
+3 & Adversarial vendor, slice swap & Report on an easier subset of the dataset & \textbf{Full} (\texttt{dataset.hash} binds bytes) \\
+4 & Adversarial vendor, dataset swap & Report on an entirely different dataset of similar shape & \textbf{Full} (\texttt{dataset.hash} mismatch) \\
+5 & Compromised producer (key theft) & Forge claims under \texttt{producer.id} & \textbf{Partial} (mitigated by \texttt{producer.signature}, optional in v0.1) \\
+6 & Compute-side determinism attack & Use non-deterministic execution to cherry-pick a passing run & \textbf{Out of scope} (separate determinism harness required) \\
+\bottomrule
+\end{tabular}
+\caption{Threat model and PRML v0.1 coverage.}
+\label{tab:threat}
+\end{table}
+
+\subsection{Out-of-scope threats}
+
+PRML does not protect against:
+
+\begin{itemize}[leftmargin=2em, itemsep=0.2em]
+  \item Lying about which model was actually run, in the absence of \texttt{model.hash}. Mitigated by populating the optional field.
+  \item Dataset legitimacy --- who labeled it, with what bias, under what consent. This is a property of the data pipeline upstream of PRML.
+  \item Side-channel leakage during evaluation (timing, memory residency).
+  \item Quantum-era SHA-256 collision attacks. v0.2 will define algorithm agility via a \texttt{hash\_alg} field.
+\end{itemize}
+
+\subsection{Cryptographic assumptions}
+
+The format relies on (i) SHA-256 collision resistance per NIST FIPS 180-4~\cite{nist2015fips180}, with $2^{-128}$ second-preimage security for the canonical-bytes-to-hash binding; (ii) deterministic canonicalization, validated by the conformance vector set. No assumptions are made about dataset entropy, model architecture, or training procedure.
+
+\section{Compliance mapping}
+\label{sec:compliance}
+
+PRML fields map directly to obligations named in three regulatory frameworks. The mapping is intended to be defensible field-by-obligation; a more exhaustive treatment with article-text excerpts appears in our companion document~\cite{prml2026compliance}.
+
+\subsection{EU AI Act (Regulation 2024/1689)}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}c p{6cm} p{6cm}@{}}
+\toprule
+Article & Obligation summary & PRML field(s) \\
+\midrule
+12 & Automatic logging of events relevant to risk identification, traceable over system lifetime & \texttt{claim\_id}, \texttt{created\_at}, exit code, \texttt{prior\_hash} chain \\
+17 & Quality management system records, including evaluation procedures and outcomes & manifest body + sidecar hash + chain hash \\
+18 & Ten-year retention of technical documentation & append-only chain; plain-text manifest format \\
+50 & Transparency obligations to deployers of general-purpose AI systems & published canonical URL, CC BY 4.0 spec, deterministic verifier \\
+72 & Post-market monitoring of high-risk systems & amendment chain over deployed system lifetime \\
+73 & Reporting of serious incidents & \texttt{notes} field on amendments documenting incident context \\
+\bottomrule
+\end{tabular}
+\caption{EU AI Act mapping.}
+\label{tab:aiact}
+\end{table}
+
+\subsection{NIST AI RMF v1.0}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}l l p{5.5cm}@{}}
+\toprule
+Function & Subcategory & PRML alignment \\
+\midrule
+GOVERN-1 & Accountability mechanisms & \texttt{producer.id} + optional \texttt{producer.signature} \\
+GOVERN-4 & Documented policy enforcement & \texttt{prior\_hash} chain \\
+MAP-2 & Categorization of AI risks & \texttt{notes} on initial manifest documents intent \\
+MEASURE-2 & Evaluation metrics and test sets & \texttt{metric} + \texttt{dataset.hash} \\
+MEASURE-3 & Monitoring of identified risks & chain reflects monitoring cadence \\
+MANAGE-4 & Recurrent monitoring & amendment chain over deployment lifetime \\
+\bottomrule
+\end{tabular}
+\caption{NIST AI RMF mapping.}
+\label{tab:nist}
+\end{table}
+
+\subsection{ISO/IEC 42001:2023}
+
+PRML satisfies clause 7.5 (documented information control: creation, identification, format, retention) directly --- a manifest is documented information whose identity is its content hash. Clause 8.4 (operational planning and control) is supported by the amendment chain. Clause 9.2 (internal audit) is supported by the offline-verifiable audit trail. A clause-by-clause table appears in Appendix~\ref{app:iso}.
+
+\subsection{Position}
+
+PRML is not a compliance product. It is a primitive that makes the named obligations satisfiable with arithmetic verification rather than process attestation. The distinction matters: process attestation requires trusting an attester; arithmetic verification requires only the manifest, the dataset, the model, and a SHA-256 implementation.
+
+\section{Reference implementation: \texttt{falsify}}
+\label{sec:impl}
+
+The reference implementation is a single-file Python 3.10+ program named \texttt{falsify}, totaling 1{,}287 lines of code, MIT-licensed, with three subcommands:
+
+\begin{itemize}[leftmargin=2em, itemsep=0.2em]
+  \item \texttt{falsify init <claim>}: writes a manifest skeleton with placeholder values and a UUIDv7 \texttt{claim\_id}.
+  \item \texttt{falsify lock <claim>}: canonicalizes the manifest, computes the SHA-256, writes the sidecar, and refuses to overwrite an existing locked manifest unless \texttt{--amend} is passed (which writes a new manifest with \texttt{prior\_hash} populated).
+  \item \texttt{falsify verify <claim> --observed <value>}: re-canonicalizes, re-hashes, compares against the sidecar, evaluates the predicate, and emits a verdict with the appropriate exit code.
+\end{itemize}
+
+The canonicalizer is hand-rolled (it does not delegate to PyYAML's serializer, which is non-deterministic across versions). Runtime dependencies are limited to the Python standard library plus PyYAML for input parsing only. The implementation runs on Linux, macOS, and Windows. Performance: lock and verify on a 50{,}000-row classification benchmark complete in under 200~ms, excluding model inference.
+
+A GitHub Action, \texttt{falsify-verify@v0.1}, is shipped alongside the implementation. It runs on push and pull request, scans the repository for \texttt{*.prml.yaml} files, verifies each against its sidecar, and fails the workflow on any \texttt{TAMPERED} or \texttt{FAIL} verdict.
+
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{What PRML changes about the publication record}
+
+If PRML is adopted at the conference and journal level, the publication record changes in the following ways:
+
+\begin{itemize}[leftmargin=2em, itemsep=0.2em]
+  \item Reviewers can demand a manifest hash before reading the results section. The hash is shorter than a DOI; embedding it in the abstract is feasible.
+  \item Conferences can require a manifest URL plus chain hash in the camera-ready submission, alongside code and data links.
+  \item Auditors and regulators can verify claims years later, offline, without trusting the publisher or the registrar.
+  \item Retractions become first-class artifacts: a retraction is a final amendment with a \texttt{retracted: true} note, and the chain preserves the entire history including the retraction rationale.
+\end{itemize}
+
+\subsection{What PRML does not change}
+
+PRML is silent on:
+
+\begin{itemize}[leftmargin=2em, itemsep=0.2em]
+  \item Whether benchmarks measure what they claim to measure (validity, not integrity).
+  \item Whether published metrics correlate with deployment performance (generalization, not commitment).
+  \item Whether the producer is a good actor (identity, not trustworthiness).
+  \item Whether the dataset is ethically sourced or representative.
+\end{itemize}
+
+These remain the responsibility of the layers above PRML --- model cards, datasheets, red-team reports, governance reviews, deployment audits.
+
+\subsection{Adoption strategy}
+
+We anticipate adoption in three phases:
+
+\begin{enumerate}[leftmargin=2em, itemsep=0.2em]
+  \item \textbf{Voluntary.} Opt-in field in the NeurIPS reproducibility checklist; opt-in tag in arXiv submissions; opt-in CI step in industrial ML pipelines.
+  \item \textbf{Regulator-driven.} Notified bodies under the EU AI Act reference manifest hashes in audit-trail submissions; ISO/IEC 42001 auditors accept manifest chains as documented-information evidence.
+  \item \textbf{Default.} When reviewers and acquirers begin to refuse claims that lack a manifest, the equilibrium shifts. The cost of producing a manifest (one hash) is dwarfed by the cost of failing to produce one (regulatory exposure, reviewer rejection, downstream trust erosion).
+\end{enumerate}
+
+\section{Limitations and future work}
+\label{sec:limits}
+
+\subsection{v0.1 limitations}
+
+\begin{itemize}[leftmargin=2em, itemsep=0.2em]
+  \item No mandatory signature: \texttt{producer.signature} is optional. High-stakes deployments should treat it as required.
+  \item No multi-metric claims: a single manifest binds a single (metric, comparator, threshold) tuple. Composite claims require a chain.
+  \item No tolerance specification: bit-exact comparison only.
+  \item No formal canonicalization grammar in BNF: the grammar is specified prosaically and validated by test vectors.
+\end{itemize}
+
+\subsection{v0.2 roadmap (target 2026 Q4)}
+
+\begin{itemize}[leftmargin=2em, itemsep=0.2em]
+  \item Algorithm agility: a \texttt{hash\_alg} field permitting \texttt{sha256}, \texttt{sha3-256}, or post-quantum candidates.
+  \item Tolerance: a \texttt{tolerance} field for floating-point comparison.
+  \item Multi-claim manifests: a \texttt{claims:} sequence with shared dataset and seed.
+  \item Mandatory signature for high-risk Annex III systems.
+  \item Formal canonicalization BNF.
+\end{itemize}
+
+\subsection{Open questions}
+
+Post-quantum hash migration. Interoperability with Weights \& Biases, MLflow, and other experiment trackers. On-chain anchoring of chain hashes (deliberately deferred --- the chain hash is sufficient for the vast majority of audit use without introducing a blockchain dependency). Integration with model registries (Hugging Face, ONNX Model Zoo).
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+PRML provides the primitive that machine-learning evaluation has lacked: a cryptographic record of what was committed before an experiment, in a format readable by humans, verifiable by machines, and durable for decades. The cost of adoption is one hash function call. The cost of non-adoption --- measured in regulatory exposure, reproducibility failures, and accumulated reviewer skepticism --- is rising on a calendar that started ticking on 1 August 2024 and reaches the next milestone on 2 August 2026. We invite the community to review v0.1, contribute test vectors, and adopt the format in their own publication and audit pipelines. The specification, the reference implementation, and the conformance suite are all available under permissive licenses; the v0.2 freeze is targeted for 2026-05-22, with a three-week window for substantive review.
+
+\section*{Acknowledgements}
+
+This work was conducted independently at Studio-11, with no external funding. We thank the Open Science Framework, ClinicalTrials.gov, and the Sigstore community for proving the design space. Errors are the authors' alone.
+
+\section*{Reproducibility statement}
+
+The full specification text, twelve conformance vectors with locked SHA-256 digests, the reference implementation source, and this preprint's \LaTeX{} source are available at \href{https://github.com/sk8ordie84/falsify}{github.com/sk8ordie84/falsify} (commit hash to be pinned in the camera-ready version). The spec is licensed under CC BY 4.0; the implementation is licensed under MIT.
+
+\section*{Conflict of interest statement}
+
+The authors declare no competing financial or personal interests.
+
+\begin{thebibliography}{99}
+
+\bibitem{mitchell2019modelcards}
+Mitchell, M., et al. (2019). \emph{Model Cards for Model Reporting}. Proceedings of FAT* 2019. \url{https://doi.org/10.1145/3287560.3287596}.
+
+\bibitem{gebru2018datasheets}
+Gebru, T., et al. (2021). \emph{Datasheets for Datasets}. Communications of the ACM, 64(12). \url{https://doi.org/10.1145/3458723}.
+
+\bibitem{liang2023helm}
+Liang, P., et al. (2023). \emph{Holistic Evaluation of Language Models}. TMLR. \url{https://arxiv.org/abs/2211.09110}.
+
+\bibitem{pineau2021reproducibility}
+Pineau, J., et al. (2021). \emph{Improving Reproducibility in Machine Learning Research}. JMLR 22(164). \url{https://jmlr.org/papers/v22/20-303.html}.
+
+\bibitem{nosek2018preregistration}
+Nosek, B. A., et al. (2018). \emph{The preregistration revolution}. PNAS 115(11). \url{https://doi.org/10.1073/pnas.1708274114}.
+
+\bibitem{chambers2013registered}
+Chambers, C. D. (2013). \emph{Registered Reports: A new publishing initiative at Cortex}. Cortex 49(3).
+
+\bibitem{zarin2011clinicaltrials}
+Zarin, D. A., Tse, T., Williams, R. J., Califf, R. M., \& Ide, N. C. (2011). \emph{The ClinicalTrials.gov Results Database --- Update and Key Issues}. New England Journal of Medicine 364(9). \url{https://doi.org/10.1056/NEJMsa1012065}.
+
+\bibitem{goldacre2014alltrials}
+Goldacre, B. (2014). \emph{AllTrials: a campaign for transparency in clinical trial reporting}. BMJ 348.
+
+\bibitem{torresarias2019intoto}
+Torres-Arias, S., et al. (2019). \emph{in-toto: Providing farm-to-table guarantees for bits and bytes}. USENIX Security.
+
+\bibitem{benet2014ipfs}
+Benet, J. (2014). \emph{IPFS --- Content Addressed, Versioned, P2P File System}. arXiv:1407.3561.
+
+\bibitem{git2005}
+Torvalds, L., et al. (2005--present). \emph{Git: Distributed Version Control System}. \url{https://git-scm.com}.
+
+\bibitem{rfc9562}
+Davis, K., Peabody, B., \& Leach, P. (2024). \emph{RFC 9562: Universally Unique IDentifiers (UUIDs)}. IETF.
+
+\bibitem{nist2015fips180}
+NIST (2015). \emph{Federal Information Processing Standards Publication 180-4: Secure Hash Standard (SHS)}. National Institute of Standards and Technology.
+
+\bibitem{nist2023airmf}
+NIST (2023). \emph{Artificial Intelligence Risk Management Framework (AI RMF 1.0)}. NIST AI 100-1.
+
+\bibitem{iso420012023}
+ISO/IEC (2023). \emph{ISO/IEC 42001:2023 --- Information technology --- Artificial intelligence --- Management system}.
+
+\bibitem{euaiact2024}
+European Parliament and Council (2024). \emph{Regulation (EU) 2024/1689 (AI Act)}. Official Journal of the European Union.
+
+\bibitem{prml2026spec}
+Studio-11 (2026). \emph{PRML v0.1 --- Pre-Registered ML Manifest Specification}. \url{https://spec.falsify.dev/v0.1}.
+
+\bibitem{prml2026compliance}
+Studio-11 (2026). \emph{PRML v0.1 --- EU AI Act Article 12/17/18/50 Mapping}. \url{https://github.com/sk8ordie84/falsify/blob/main/spec/compliance/AI-Act-mapping-v0.1.md}.
+
+\end{thebibliography}
+
+\appendix
+
+\section{Canonical-bytes ABNF grammar}
+\label{app:abnf}
+
+\begin{verbatim}
+manifest      = field *( LF field ) LF
+field         = key ": " value / key ":" LF nested
+key           = 1*( ALPHA / DIGIT / "_" )
+value         = quoted-string / number / boolean
+quoted-string = DQUOTE *char DQUOTE
+char          = unescaped / escape
+escape        = "\\" ( "\\" / DQUOTE / "n" / "t" / "u" 4HEXDIG )
+number        = ["-"] 1*DIGIT [ "." 1*DIGIT ] [ ("e"/"E") ["-"/"+"] 1*DIGIT ]
+boolean       = "true" / "false"
+nested        = 1*( "  " field LF )
+\end{verbatim}
+
+This grammar is non-normative; conformance is judged against the test vectors. The grammar is published to aid implementers, not to define the contract.
+
+\section{ISO/IEC 42001:2023 clause-by-clause mapping}
+\label{app:iso}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}l p{5cm} p{6cm}@{}}
+\toprule
+Clause & Title & PRML satisfaction \\
+\midrule
+7.5.1 & General (documented information) & Manifest is documented information; identity is content hash \\
+7.5.2 & Creating and updating & \texttt{create\_at} field; amendment chain via \texttt{prior\_hash} \\
+7.5.3 & Control of documented information & Sidecar hash provides tamper-evidence; offline verifier provides distribution control \\
+8.4 & Operational planning and control & Chain reflects operational changes over system lifetime \\
+9.2 & Internal audit & Offline-verifiable audit trail with no auditor-side trust assumption \\
+\bottomrule
+\end{tabular}
+\caption{ISO/IEC 42001:2023 clause mapping.}
+\end{table}
+
+\section{Why YAML and not JSON, CBOR, or TOML}
+\label{app:why-yaml}
+
+The format choice is a trade-off between human reviewability, parser availability, deterministic serialization, and byte efficiency. We considered:
+
+\begin{itemize}[leftmargin=2em, itemsep=0.2em]
+  \item \textbf{JSON}: deterministic via JCS (RFC 8785), but verbose for nested mappings and lacks native multi-line strings. Acceptable but inferior in human reviewability for this domain.
+  \item \textbf{CBOR (RFC 8949)}: binary, efficient, deterministic via CTAP2-canonical-CBOR. Loses human reviewability entirely. Appropriate for inner audit-log layers, not for the publication-facing manifest.
+  \item \textbf{TOML}: human-readable, but the canonicalization story is less mature; nested mappings are awkward; less library coverage in scientific Python.
+  \item \textbf{YAML 1.2 strict subset}: human-readable; ubiquitous parser availability; canonical serialization is a solved problem if scope is restricted (no anchors, no flow, no comments). Chosen.
+\end{itemize}
+
+A future v0.2 could provide a CBOR encoding alongside YAML for high-throughput logging contexts, with bidirectional canonical mapping between the two.
+
+\section{Implementation checklist for verifier authors}
+\label{app:checklist}
+
+A second-implementation author should verify the following before claiming v0.1 conformance:
+
+\begin{enumerate}[leftmargin=2em, itemsep=0.1em]
+  \item Reads YAML 1.2 strict subset (no anchors, aliases, tags, flow collections).
+  \item Sorts keys lexicographically by Unicode code-point order at every depth.
+  \item Emits two-space indentation, LF terminators only, UTF-8 encoding.
+  \item Quotes all string values with double quotes; escapes per spec.
+  \item Serializes floats via shortest round-trip IEEE 754 representation.
+  \item Computes SHA-256 over the canonical bytes; emits lowercase hex.
+  \item Reads sidecar file \texttt{<claim\_id>.prml.sha256} as one LF-terminated hex line.
+  \item Validates required fields: \texttt{version}, \texttt{claim\_id}, \texttt{created\_at}, \texttt{metric}, \texttt{comparator}, \texttt{threshold}, \texttt{dataset.id}, \texttt{dataset.hash}, \texttt{seed}, \texttt{producer.id}.
+  \item Returns exit code 3 on hash mismatch; 11 on input-precondition failure; 10 on metric falsified; 0 on metric verified.
+  \item Reproduces all twelve conformance vectors byte-for-byte.
+  \item Handles UUIDv7 \texttt{claim\_id} parsing per RFC 9562.
+  \item Handles RFC 3339 timestamps with \texttt{Z} suffix.
+  \item Refuses to overwrite a locked manifest without explicit \texttt{--amend} flag.
+  \item On amendment, populates \texttt{prior\_hash} with the immediate predecessor's hash.
+  \item Emits chain hash on \texttt{audit} subcommand: SHA-256 of concatenated canonical bytes in chain order.
+  \item Documents all error conditions in the verifier's man page or equivalent.
+  \item Releases under a permissive license (MIT, Apache 2.0, BSD).
+  \item Publishes test results against the v0.1 conformance suite.
+  \item Pins to PRML v0.1 explicitly; refuses manifests with \texttt{version != "prml/0.1"}.
+  \item Documents the canonicalizer's behaviour on malformed input (refuses, exits 11).
+\end{enumerate}
+
+\end{document}
