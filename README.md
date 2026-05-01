@@ -3,13 +3,19 @@
 > **Pre-registration + CI for AI-agent claims.** Lock the claim and threshold with SHA-256 *before* running the experiment — or the result doesn't count.
 
 ![CI](https://github.com/sk8ordie84/falsify/actions/workflows/falsify.yml/badge.svg)
+![Multi-lang Conformance](https://github.com/sk8ordie84/falsify/actions/workflows/multi-lang-conformance.yml/badge.svg)
 ![PyPI](https://img.shields.io/pypi/v/falsify?color=brightgreen&label=pypi)
-![coverage](https://img.shields.io/badge/tests-518%20passing-brightgreen)
+![coverage](https://img.shields.io/badge/tests-564%20passing-brightgreen)
+![impls](https://img.shields.io/badge/reference%20impls-4%20(py%20%C2%B7%20js%20%C2%B7%20go%20%C2%B7%20rs)-brightgreen)
 ![honesty](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/sk8ordie84/falsify/main/.falsify/badge.json)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-blue.svg)
 
 > Code: MIT. "FALSIFY" name and chevron logo: ™ reserved. See [NOTICE](NOTICE) · [docs/COMMERCIAL.md](docs/COMMERCIAL.md).
+
+---
+
+> **Latest — 2026-05-01** · v0.1.2 released ([release notes](https://github.com/sk8ordie84/falsify/releases/tag/v0.1.2) · `pip install falsify==0.1.2`). PRML v0.1 specification published with **four reference implementations** (Python · [JavaScript](impl/js/) · [Go](impl/go/) · [Rust](impl/rust/)) all reproducing the [12 v0.1 vectors](spec/test-vectors/v0.1/) and [6 v0.2 candidate vectors](spec/v0.2/test-vectors-candidates.json) byte-for-byte. [14-page arXiv preprint](spec/paper/) and [v0.2 RFC roadmap](spec/v0.2/ROADMAP.md) (freeze 2026-05-22) open for public review.
 
 ---
 
