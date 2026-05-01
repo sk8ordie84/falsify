@@ -6,6 +6,59 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.1.2] — 2026-05-01
+
+The PRML specification day — three reference implementations across Python, JavaScript, and Go all reproducing the v0.1 conformance vectors byte-for-byte; six additional v0.2 candidate vectors; four cross-language portability findings documented; arXiv preprint, compliance landing copy, positioning matrix, v0.2 RFC roadmap, and the HumanEval worked example all published. Code itself unchanged from 0.1.1; this release exists to mark a specification-level milestone.
+
+### Added — specification
+
+- **PRML v0.1 specification** at `spec.falsify.dev/v0.1` (RFC-style, CC BY 4.0, ~18 pages). Editor: Studio-11 (Independent).
+- **Twelve v0.1 conformance test vectors** with locked SHA-256 digests under `spec/test-vectors/v0.1/`.
+- **Six v0.2 candidate vectors** (TV-013 through TV-018) under `spec/v0.2/test-vectors-candidates.json`. Five pass byte-for-byte across all three reference implementations; TV-018 surfaces Finding 4 (small-magnitude float rendering diverges three ways across language stdlibs).
+- **arXiv preprint** in `spec/paper/prml-v0.1-preprint.tex` — 14-page LaTeX working draft, CC BY 4.0, cs.CR submission in flight.
+- **EU AI Act mapping** in `spec/compliance/AI-Act-mapping-v0.1.md` — Articles 12, 17, 18, 50, 72, 73 with field-level bindings.
+- **Compliance landing copy** in `spec/compliance/landing.md` — for compliance leads, AI governance officers, notified body assessors.
+- **Positioning matrix** in `spec/analysis/positioning-v0.1.md` — PRML vs in-toto, SLSA, Model Cards, HELM, ClinicalTrials.gov; two-axis framework; six common confusions cleared.
+- **Canonicalization portability findings** in `spec/analysis/canonicalization-portability-v0.1.md` — four cross-language gotchas surfaced by the JS and Go implementations, with severity asymmetry analysis per language.
+- **v0.2 RFC roadmap** in `spec/v0.2/ROADMAP.md` — ten changes, five open RFC questions, freeze targeted 2026-05-22, release 2026-06-15.
+- **PRML scoring methodology** in `spec/analysis/scoring-methodology-v0.1.md` (carried over from 0.1.1 publishing window) with twelve worked examples.
+
+### Added — implementations
+
+- **`impl/js/falsify.js`** — Node.js second reference implementation. ~400 LOC, hand-rolled canonicalizer, zero runtime dependencies beyond Node.js stdlib. Reproduces all twelve v0.1 vectors byte-for-byte. CLI: `init / lock / verify / hash / test-vectors`.
+- **`impl/go/falsify.go`** — Go third reference implementation. ~450 LOC, hand-rolled canonicalizer, standard library only. Reproduces all twelve v0.1 vectors byte-for-byte on first compile. Notably, Go's `encoding/json` with `Decoder.UseNumber()` handles two of the three v0.1 portability findings without workarounds.
+- **`impl/js/README.md`** and **`impl/go/README.md`** — build / run docs and severity-asymmetry tables.
+
+### Added — tests
+
+- `tests/test_prml_v02_candidates.py` — 17 new unittests asserting that the Python reference reproduces the v0.2 candidate vectors. Total test count: 547 → 564, no regressions.
+
+### Added — examples
+
+- `examples/humaneval-walkthrough/` — end-to-end procedure document and runnable Python script demonstrating PRML on a real benchmark (HumanEval `pass@1`). Covers pinning the dataset, locking the manifest, running inference, verifying, and tamper detection.
+
+### Added — operational artefacts (private to the launch directory)
+
+- `proposals/_TEMPLATES.md` — six proposal / SOW / MSA / invoice templates for the post-outreach sales flow.
+- `outreach/eu-ai-act-compliance-targets.md` — twelve named EU AI Act compliance / consulting / provider / academic targets with custom cold-mail angles.
+- `outreach/MONDAY-2026-05-04-batch.md` — twelve fully personalised outreach mails ready to fire Monday 2026-05-04 at 09:00–11:00 CET.
+- `monitoring/baseline-2026-05-01.md` — engagement baseline snapshot.
+- `monitoring/sunday-monday-tuesday-playbook.md` — hour-by-hour operational playbook for Sunday, Monday, and Tuesday.
+- `landing/falsify-dev-content-brief.md` — content brief for upgrading the falsify.dev landing page.
+- `blog/i-implemented-prml-in-two-languages.md` — dev.to-format blog post covering Findings 1–3 (publishable from Sunday onward).
+
+### Changed
+
+- `README.md` — new "Specification artifacts" section surfacing the eight new public docs and three reference implementations; "Repository layout" updated with `impl/`, `spec/analysis/`, `spec/compliance/`, `spec/paper/`, `spec/v0.2/`; "Roadmap" section expanded to point at both the CLI roadmap (`ROADMAP.md`) and the spec roadmap (`spec/v0.2/ROADMAP.md`).
+- `ROADMAP.md` — rewritten to clearly separate CLI tool features from PRML specification evolution. CLI v0.2 retargeted to 2026-06-15, three weeks after the spec freeze on 2026-05-22.
+- `spec/index.html` — new "Related documents" section linking the eight new public artefacts via canonical GitHub blob URLs.
+
+### Notes
+
+- Code unchanged from 0.1.1: same canonicalizer, same exit codes, same 547 + 17 = 564 tests passing. This release marks the specification milestone, not a code change.
+- The Finding 4 cross-language float divergence (TV-018) is documented but deliberately not patched in v0.1; the v0.2 grammar (RFC-Q-04, always-quote-numbers) is the strategic fix.
+- arXiv submission to cs.CR is in flight pending endorsement from a TUF / in-toto / SLSA contributor.
+
 ## [0.1.1] — 2026-04-28
 
 First public release on PyPI. `pip install falsify` now works.
@@ -223,5 +276,7 @@ verdict refresh, multi-metric specs.
 - Built with Claude Code + Opus 4.7 (1M context). Every commit
   carries a `Co-Authored-By:` trailer.
 
-[Unreleased]: https://github.com/sk8ordie84/falsify/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/sk8ordie84/falsify/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/sk8ordie84/falsify/releases/tag/v0.1.2
+[0.1.1]: https://github.com/sk8ordie84/falsify/releases/tag/v0.1.1
 [0.1.0]: https://github.com/sk8ordie84/falsify/releases/tag/v0.1.0
