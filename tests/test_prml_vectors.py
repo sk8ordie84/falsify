@@ -18,9 +18,8 @@ from __future__ import annotations
 import hashlib
 import json
 import sys
+import unittest
 from pathlib import Path
-
-import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 VECTORS_PATH = REPO_ROOT / "spec" / "test-vectors" / "v0.1" / "test-vectors.json"
@@ -31,65 +30,105 @@ import falsify  # noqa: E402
 
 def _load_vectors():
     if not VECTORS_PATH.exists():
-        pytest.skip(f"test vectors not generated yet: {VECTORS_PATH}")
+        return None
     return json.loads(VECTORS_PATH.read_text(encoding="utf-8"))
 
 
-VECTORS = _load_vectors()
-VECTOR_IDS = [v["id"] for v in VECTORS]
+VECTORS = _load_vectors() or []
 
 
-@pytest.mark.parametrize("vector", VECTORS, ids=VECTOR_IDS)
-def test_canonical_bytes_match(vector):
-    """The canonicalizer MUST produce the exact byte sequence in the vector."""
-    produced = falsify._canonicalize(vector["input"])
-    assert produced == vector["canonical"], (
-        f"{vector['id']} canonical bytes diverged from spec.\n"
-        f"  Expected length: {len(vector['canonical'])} chars\n"
-        f"  Produced length: {len(produced)} chars\n"
-        f"  Either fix _canonicalize, or regenerate vectors and bump spec version."
+class PRMLVectorTests(unittest.TestCase):
+    """Generated dynamically: one (canonical, hash) pair of assertions per vector."""
+
+    @classmethod
+    def setUpClass(cls):
+        if not VECTORS:
+            raise unittest.SkipTest(f"test vectors not generated yet: {VECTORS_PATH}")
+
+    def test_vector_count(self):
+        """v0.1 ships with exactly 12 test vectors. Adding more is a v0.2 change."""
+        self.assertEqual(len(VECTORS), 12, f"Expected 12 vectors, got {len(VECTORS)}")
+
+    def test_key_order_invariance(self):
+        """TV-001 and TV-002 differ only in input key insertion order. Hashes MUST match."""
+        by_id = {v["id"]: v for v in VECTORS}
+        self.assertIn("TV-001", by_id)
+        self.assertIn("TV-002", by_id)
+        self.assertEqual(
+            by_id["TV-001"]["hash"],
+            by_id["TV-002"]["hash"],
+            "Key-ordering invariance broken — TV-001 and TV-002 must produce identical hashes.",
+        )
+
+    def test_content_sensitivity(self):
+        """TV-001 and TV-003 differ only by threshold (0.85 vs 0.86). Hashes MUST differ."""
+        by_id = {v["id"]: v for v in VECTORS}
+        self.assertIn("TV-001", by_id)
+        self.assertIn("TV-003", by_id)
+        self.assertNotEqual(
+            by_id["TV-001"]["hash"],
+            by_id["TV-003"]["hash"],
+            "Content sensitivity broken — TV-001 and TV-003 produced identical hashes.",
+        )
+
+    def test_amendment_chain_linkage(self):
+        """TV-009 amends TV-001; its prior_hash MUST equal TV-001's hash."""
+        by_id = {v["id"]: v for v in VECTORS}
+        self.assertEqual(
+            by_id["TV-009"]["input"]["prior_hash"],
+            by_id["TV-001"]["hash"],
+            "Amendment chain broken — TV-009.prior_hash must equal TV-001.hash.",
+        )
+
+
+def _make_canonical_test(vector):
+    def test(self):
+        produced = falsify._canonicalize(vector["input"])
+        self.assertEqual(
+            produced,
+            vector["canonical"],
+            f"{vector['id']} canonical bytes diverged from spec.\n"
+            f"  Expected length: {len(vector['canonical'])} chars\n"
+            f"  Produced length: {len(produced)} chars\n"
+            f"  Either fix _canonicalize, or regenerate vectors and bump spec version.",
+        )
+
+    test.__doc__ = f"{vector['id']}: canonical bytes match spec"
+    return test
+
+
+def _make_hash_test(vector):
+    def test(self):
+        canonical = falsify._canonicalize(vector["input"])
+        produced_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        self.assertEqual(
+            produced_hash,
+            vector["hash"],
+            f"{vector['id']} hash mismatch.\n"
+            f"  Expected: {vector['hash']}\n"
+            f"  Produced: {produced_hash}\n"
+            f"  This is a v0.1 conformance failure.",
+        )
+
+    test.__doc__ = f"{vector['id']}: SHA-256 of canonical bytes matches spec"
+    return test
+
+
+# Dynamically attach one canonical-bytes test and one hash test per vector
+# so the unittest report shows each TV-XXX as a separate line.
+for _v in VECTORS:
+    _vid = _v["id"].replace("-", "_").lower()
+    setattr(
+        PRMLVectorTests,
+        f"test_canonical_bytes_{_vid}",
+        _make_canonical_test(_v),
+    )
+    setattr(
+        PRMLVectorTests,
+        f"test_hash_{_vid}",
+        _make_hash_test(_v),
     )
 
 
-@pytest.mark.parametrize("vector", VECTORS, ids=VECTOR_IDS)
-def test_hash_matches(vector):
-    """SHA-256 of canonical bytes MUST match the vector's expected hash."""
-    canonical = falsify._canonicalize(vector["input"])
-    produced_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-    assert produced_hash == vector["hash"], (
-        f"{vector['id']} hash mismatch.\n"
-        f"  Expected: {vector['hash']}\n"
-        f"  Produced: {produced_hash}\n"
-        f"  This is a v0.1 conformance failure."
-    )
-
-
-def test_key_order_invariance():
-    """TV-001 and TV-002 differ only in input key insertion order. Hashes MUST match."""
-    by_id = {v["id"]: v for v in VECTORS}
-    assert "TV-001" in by_id and "TV-002" in by_id
-    assert by_id["TV-001"]["hash"] == by_id["TV-002"]["hash"], (
-        "Key-ordering invariance broken — TV-001 and TV-002 must produce identical hashes."
-    )
-
-
-def test_content_sensitivity():
-    """TV-001 and TV-003 differ only by threshold (0.85 vs 0.86). Hashes MUST differ."""
-    by_id = {v["id"]: v for v in VECTORS}
-    assert "TV-001" in by_id and "TV-003" in by_id
-    assert by_id["TV-001"]["hash"] != by_id["TV-003"]["hash"], (
-        "Content sensitivity broken — TV-001 and TV-003 produced identical hashes."
-    )
-
-
-def test_amendment_chain_linkage():
-    """TV-009 amends TV-001; its prior_hash MUST equal TV-001's hash."""
-    by_id = {v["id"]: v for v in VECTORS}
-    assert by_id["TV-009"]["input"]["prior_hash"] == by_id["TV-001"]["hash"], (
-        "Amendment chain broken — TV-009.prior_hash must equal TV-001.hash."
-    )
-
-
-def test_vector_count():
-    """v0.1 ships with exactly 12 test vectors. Adding more is a v0.2 change."""
-    assert len(VECTORS) == 12, f"Expected 12 vectors, got {len(VECTORS)}"
+if __name__ == "__main__":
+    unittest.main()
