@@ -30,9 +30,9 @@ Original v0.1.0 highlights (CLI, hooks, CI, MCP scaffold, Claude Code skills) re
 
 ---
 
-## Next — CLI v0.2 (target 2026-06-15)
+## Next — CLI v0.2.0 (target 2026-06-15)
 
-The spec v0.2 freeze is 2026-05-22; the CLI release follows about three weeks later. CLI v0.2 has two work streams: spec-conformance changes (driven by spec evolution) and tool-level features (independent of spec).
+The spec v0.2 freeze is 2026-05-22; the CLI release follows about three weeks later. CLI v0.2.0 has two work streams: spec-conformance changes (driven by spec evolution) and tool-level features (independent of spec).
 
 ### Spec-conformance changes
 
@@ -57,7 +57,7 @@ Independent of spec evolution; could ship in a CLI v0.1.x point release as well:
 
 ---
 
-## Soon — CLI v0.3 (target Q4 2026)
+## Soon — CLI v0.3.0 (target Q4 2026)
 
 Larger moves, scoped loosely:
 
