@@ -2,7 +2,7 @@
 
 **Question:** Is the v0.1 canonicalization implementable in second and third languages byte-for-byte?
 
-**Answer:** Yes — Node.js (~400 LOC) and Go (~450 LOC) implementations both reproduce all twelve v0.1 conformance vectors with bit-identical canonical bytes and matching SHA-256 digests. The exercise surfaced three non-obvious cross-language pitfalls that the v0.1 prose specification under-specifies, and revealed that the *severity* of each varies by language stdlib. This document records the findings so v0.2 can address each in formal grammar form.
+**Answer:** Yes for the v0.1 normative suite (12 vectors) — Node.js (~400 LOC) and Go (~450 LOC) implementations both reproduce all twelve v0.1 vectors with bit-identical canonical bytes and matching SHA-256 digests. The exercise surfaced **three** non-obvious cross-language pitfalls in the v0.1 normative suite that the prose specification under-specifies. A subsequent run against six v0.2 candidate vectors (TV-013 → TV-018) surfaced a **fourth**, more subtle, finding around small-magnitude float rendering. The *severity* of each finding varies by language stdlib. This document records all four so v0.2 can address each in formal grammar form.
 
 **Sources:**
 
@@ -88,15 +88,50 @@ A simpler, more aggressive alternative: **always quote string scalars** in the c
 
 ---
 
+### Finding 4: Float rendering for small-magnitude values diverges three ways
+
+**Vector affected:** TV-018 (v0.2 candidate, `threshold: 0.000001` = 1e−6).
+
+**Symptom:** A single floating-point input value of $10^{-6}$ canonicalises to **three distinct strings** across the three reference implementations, producing three different SHA-256 digests:
+
+| Implementation | Canonical bytes for `threshold: 1e-6` |
+|---|---|
+| Python reference (PyYAML `safe_dump`) | `threshold: 1.0e-06`  |
+| Node.js implementation | `threshold: 0.000001`  |
+| Go implementation | `threshold: 1e-06`  |
+
+**Root cause — three independent stdlib decisions:**
+
+- **PyYAML** detects the float magnitude and emits scientific notation, with a quirky `.0` prefix on the mantissa (`1.0e-06`, not `1e-06`).
+- **JavaScript** `Number.prototype.toString()` switches to scientific notation only below ~$10^{-7}$; for $10^{-6}$ it returns the decimal form `'0.000001'`.
+- **Go** `json.Number` preserves the raw JSON text. The JSON encoding `1e-06` (which Go's `encoding/json` emits for very small floats) lacks PyYAML's mantissa-`.0` decoration.
+
+Each is a defensible default in its language ecosystem. None of them agree.
+
+**Languages affected:** essentially all of them, in different ways. Java's `Double.toString` differs from JavaScript. Rust's `f64::to_string` differs again. The float-to-string conversion is one of the most folkloric pieces of stdlib design across languages.
+
+**Workaround in current implementations:** none. The candidate vector TV-018 currently passes only in the Python reference. JS and Go implementations correctly produce *their* language's stdlib float string but not PyYAML's.
+
+**Why this matters:** of the four findings, this is the most subtle. Findings 1, 2, and 3 surface as obviously wrong outputs (precision loss, missing `.0`, surprise quoting). Finding 4 surfaces as a **silently different valid float string** — every language has a defensible answer, but the conformance contract requires byte equality.
+
+**v0.2 recommendation — strong:** adopt RFC-Q-04 from the v0.2 ROADMAP — **always quote numbers in the canonical form**. With `threshold: '0.000001'` (single-quoted decimal string) the language-stdlib float-formatting differences become invisible: every implementation reads the same string from the YAML and emits the same string back. The producer chooses the textual form once; verifiers honour it byte-for-byte.
+
+**Alternative that does not work cleanly:** specifying a single numeric format in the spec ("scientific notation with mantissa `.0` for |x| < 1e-4") and forcing every implementation to reimplement Python's float repr to match. This is brittle, locale-sensitive, and punishes implementers; we do not recommend it.
+
+**Status:** TV-018 is therefore **not** promoted to the v0.2 normative suite as currently shaped. After v0.2 grammar lands (always-quoted numbers per RFC-Q-04), the same logical input will produce a single canonical form across all implementations, and the vector becomes promotable.
+
+---
+
 ## Severity asymmetry: language stdlib matters
 
-The three findings above are not equally severe across languages. The Go implementation surprisingly handled two of them with **no workaround** because Go's standard `encoding/json` package preserves the raw text of numeric fields when configured with `Decoder.UseNumber()`. The result is a `json.Number` typed `string`, which the canonicalizer can emit directly.
+The four findings are not equally severe across languages. The Go implementation surprisingly handled the first two with **no workaround** because Go's standard `encoding/json` package preserves the raw text of numeric fields when configured with `Decoder.UseNumber()`. The result is a `json.Number` typed `string`, which the canonicalizer can emit directly. Finding 4, by contrast, exposes a divergence that affects *every* language: each stdlib's float-to-string conversion is a defensible-but-unique opinion.
 
 | Finding | Python (PyYAML) | JavaScript (stdlib `JSON`) | Go (stdlib `encoding/json`) |
 |---|---|---|---|
 | 1: uint64 max precision | OK (arbitrary-precision int) | **Workaround needed** (regex BigInt sentinel) | OK (`json.Number` raw string) |
 | 2: integer-valued float typing | OK (PyYAML preserves `float` type) | **Workaround needed** (field-level float hint set) | OK (`json.Number` preserves raw `.0`) |
-| 3: plain-scalar `==` quoting | OK (PyYAML's heuristic accepts) | **Hand-rolled predicate** | **Hand-rolled predicate** |
+| 3: plain-scalar `==` quoting | OK (PyYAML heuristic accepts) | **Hand-rolled predicate** | **Hand-rolled predicate** |
+| 4: small-float scientific-notation rendering | `1.0e-06` (PyYAML quirk) | `0.000001` (no scientific) | `1e-06` (no `.0`) — **all three diverge** |
 
 This is a useful empirical finding: **language choice affects how much extra work a second-implementation author has to do**. Go-from-scratch is closer to PyYAML's behaviour than JavaScript-from-scratch. A Rust implementation using `serde_json::value::Number` would likely fall in the same category as Go.
 

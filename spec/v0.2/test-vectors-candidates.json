@@ -1,0 +1,174 @@
+[
+  {
+    "id": "TV-013",
+    "title": "CJK Unicode in producer.id",
+    "description": "Producer ID contains CJK characters (Mandarin). Tests UTF-8 byte-level handling with multi-byte code points beyond Latin Extended. Distinct from TV-005 (Turkish) which uses Latin Extended-A only.",
+    "input": {
+      "version": "prml/0.1",
+      "claim_id": "01900000-0000-7000-8000-00000000000a",
+      "created_at": "2026-05-01T12:00:00Z",
+      "metric": "accuracy",
+      "comparator": ">=",
+      "threshold": 0.9,
+      "dataset": {
+        "id": "test-dataset",
+        "hash": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "seed": 42,
+      "producer": {
+        "id": "清华大学.cn"
+      }
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-00000000000a\ncomparator: '>='\ncreated_at: '2026-05-01T12:00:00Z'\ndataset:\n  hash: '0000000000000000000000000000000000000000000000000000000000000000'\n  id: test-dataset\nmetric: accuracy\nproducer:\n  id: 清华大学.cn\nseed: 42\nthreshold: 0.9\nversion: prml/0.1\n",
+    "hash": "9e7096024ebbdea936ea4f92b35ce1fe1c2b5f1883d7196b6e10287aa620fa35"
+  },
+  {
+    "id": "TV-014",
+    "title": "Long notes field with multiple paragraphs",
+    "description": "Notes field contains ~600 characters of multi-paragraph text. Tests that PyYAML safe_dump's line-width=4096 setting keeps the value on one line (no folding) and that escape sequences for newlines are rendered consistently across implementations.",
+    "input": {
+      "version": "prml/0.1",
+      "claim_id": "01900000-0000-7000-8000-00000000000b",
+      "created_at": "2026-05-01T12:00:00Z",
+      "metric": "accuracy",
+      "comparator": ">=",
+      "threshold": 0.85,
+      "dataset": {
+        "id": "imagenet-val-2012",
+        "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "seed": 42,
+      "producer": {
+        "id": "studio-11.co"
+      },
+      "notes": "Initial commit of the production accuracy claim for the v3 model release. Threshold of 0.85 was chosen based on the Q1 2026 incident review which established that the deployed system requires at least 85 percent top-1 accuracy on the ImageNet validation split to maintain user-facing service level objectives. The dataset hash pins the exact byte content of the validation split as distributed by the original ILSVRC organisers; any drift in those bytes will cause the verifier to refuse evaluation."
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-00000000000b\ncomparator: '>='\ncreated_at: '2026-05-01T12:00:00Z'\ndataset:\n  hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n  id: imagenet-val-2012\nmetric: accuracy\nnotes: Initial commit of the production accuracy claim for the v3 model release. Threshold of 0.85 was chosen based on the Q1 2026 incident review which established that the deployed system requires at least 85 percent top-1 accuracy on the ImageNet validation split to maintain user-facing service level objectives. The dataset hash pins the exact byte content of the validation split as distributed by the original ILSVRC organisers; any drift in those bytes will cause the verifier to refuse evaluation.\nproducer:\n  id: studio-11.co\nseed: 42\nthreshold: 0.85\nversion: prml/0.1\n",
+    "hash": "e1c442fda6fcc17881369da71b522f405a8679d887dbe88cdd495f45f5423b5e"
+  },
+  {
+    "id": "TV-015",
+    "title": "All optional fields populated",
+    "description": "Manifest with dataset.uri, model.id, model.hash, model.uri, notes, and compute_envelope all populated. Tests the canonical ordering and rendering of every optional field defined in v0.1 simultaneously.",
+    "input": {
+      "version": "prml/0.1",
+      "claim_id": "01900000-0000-7000-8000-00000000000c",
+      "created_at": "2026-06-01T10:00:00Z",
+      "metric": "f1",
+      "comparator": ">=",
+      "threshold": 0.82,
+      "dataset": {
+        "id": "glue-mrpc",
+        "hash": "9b9a7c5e7d6c5f4e3d2c1b0a9f8e7d6c5b4a3928171615141312111009080706",
+        "uri": "https://gluebenchmark.com/tasks/mrpc"
+      },
+      "model": {
+        "id": "bert-base-uncased",
+        "hash": "1f3c8a9d2b4e5c6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f",
+        "uri": "https://huggingface.co/bert-base-uncased"
+      },
+      "seed": 1337,
+      "producer": {
+        "id": "studio-11.co"
+      },
+      "compute_envelope": "cpu-amd-epyc-7763, fp32, batch_size=32",
+      "notes": "Reference benchmark, all optional fields populated for full provenance."
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-00000000000c\ncomparator: '>='\ncompute_envelope: cpu-amd-epyc-7763, fp32, batch_size=32\ncreated_at: '2026-06-01T10:00:00Z'\ndataset:\n  hash: 9b9a7c5e7d6c5f4e3d2c1b0a9f8e7d6c5b4a3928171615141312111009080706\n  id: glue-mrpc\n  uri: https://gluebenchmark.com/tasks/mrpc\nmetric: f1\nmodel:\n  hash: 1f3c8a9d2b4e5c6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f\n  id: bert-base-uncased\n  uri: https://huggingface.co/bert-base-uncased\nnotes: Reference benchmark, all optional fields populated for full provenance.\nproducer:\n  id: studio-11.co\nseed: 1337\nthreshold: 0.82\nversion: prml/0.1\n",
+    "hash": "7d50bbac9c49306b5a8c5bd1ebb5052e30fcf16d52ec38470dfb8610c1c9d5e4"
+  },
+  {
+    "id": "TV-016",
+    "title": "Amendment chain length 3 (second amendment)",
+    "description": "Second amendment in a chain of three. The chain is TV-001 -> amendment_1 -> amendment_2 (this vector). The prior_hash field in this vector points to amendment_1 (the previous link), not back to TV-001. Tests that chains longer than 2 are constructible and that prior_hash is the immediate predecessor only.",
+    "input": {
+      "version": "prml/0.1",
+      "claim_id": "01900000-0000-7000-8000-00000000000d",
+      "created_at": "2026-08-01T16:00:00Z",
+      "metric": "accuracy",
+      "comparator": ">=",
+      "threshold": 0.91,
+      "dataset": {
+        "id": "imagenet-val-2012",
+        "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "seed": 42,
+      "producer": {
+        "id": "studio-11.co"
+      },
+      "prior_hash": "05bf194b8033140dba6970a623afbd5fa8f8634a6dd4c728000cb0f1f03ddf7d",
+      "notes": "Second amendment: threshold raised again after Q3 audit."
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-00000000000d\ncomparator: '>='\ncreated_at: '2026-08-01T16:00:00Z'\ndataset:\n  hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n  id: imagenet-val-2012\nmetric: accuracy\nnotes: 'Second amendment: threshold raised again after Q3 audit.'\nprior_hash: 05bf194b8033140dba6970a623afbd5fa8f8634a6dd4c728000cb0f1f03ddf7d\nproducer:\n  id: studio-11.co\nseed: 42\nthreshold: 0.91\nversion: prml/0.1\n",
+    "hash": "0f758e839683768fde1995463cd31c05c3e42343b8e289c57b5914154e6fe092",
+    "intermediate_amendment_1": {
+      "spec": {
+        "version": "prml/0.1",
+        "claim_id": "01900000-0000-7000-8000-00000000000d",
+        "created_at": "2026-07-01T14:00:00Z",
+        "metric": "accuracy",
+        "comparator": ">=",
+        "threshold": 0.88,
+        "dataset": {
+          "id": "imagenet-val-2012",
+          "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "seed": 42,
+        "producer": {
+          "id": "studio-11.co"
+        },
+        "prior_hash": "1a3466cc08ee7fb60a726ea1c4db6ecf48a9f847b9b7523bfb54b2ffaefee546",
+        "notes": "First amendment: threshold raised after dataset re-curation."
+      },
+      "canonical": "claim_id: 01900000-0000-7000-8000-00000000000d\ncomparator: '>='\ncreated_at: '2026-07-01T14:00:00Z'\ndataset:\n  hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n  id: imagenet-val-2012\nmetric: accuracy\nnotes: 'First amendment: threshold raised after dataset re-curation.'\nprior_hash: 1a3466cc08ee7fb60a726ea1c4db6ecf48a9f847b9b7523bfb54b2ffaefee546\nproducer:\n  id: studio-11.co\nseed: 42\nthreshold: 0.88\nversion: prml/0.1\n",
+      "hash": "05bf194b8033140dba6970a623afbd5fa8f8634a6dd4c728000cb0f1f03ddf7d",
+      "note": "Intermediate amendment in the 3-link chain. TV-016's prior_hash points to this; this vector's prior_hash points to TV-001."
+    }
+  },
+  {
+    "id": "TV-017",
+    "title": "Strict less-than comparator with regression metric",
+    "description": "Regression manifest using the strict-less-than comparator (<). Fills the comparator coverage gap in the v0.1 suite (TV-001 through TV-012 use >=, ==, >, <=; this exercises the remaining < operator).",
+    "input": {
+      "version": "prml/0.1",
+      "claim_id": "01900000-0000-7000-8000-00000000000e",
+      "created_at": "2026-09-15T11:00:00Z",
+      "metric": "rmse",
+      "comparator": "<",
+      "threshold": 1.5,
+      "dataset": {
+        "id": "ca-housing",
+        "hash": "abababababababababababababababababababababababababababababababab"
+      },
+      "seed": 2024,
+      "producer": {
+        "id": "research-lab.example"
+      }
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-00000000000e\ncomparator: <\ncreated_at: '2026-09-15T11:00:00Z'\ndataset:\n  hash: abababababababababababababababababababababababababababababababab\n  id: ca-housing\nmetric: rmse\nproducer:\n  id: research-lab.example\nseed: 2024\nthreshold: 1.5\nversion: prml/0.1\n",
+    "hash": "3b7bbabc43922e97b9aa0c380bb6928ec37a0d5af486b92a6a9835b430a0ad11"
+  },
+  {
+    "id": "TV-018",
+    "title": "Small-magnitude float threshold",
+    "description": "Threshold = 0.000001 (1e-6). Tests how PyYAML safe_dump renders small-magnitude floats (decimal vs scientific notation). Implementations that diverge here have a number-formatting issue and should re-implement Python's repr(float) shortest round-trip rule.",
+    "input": {
+      "version": "prml/0.1",
+      "claim_id": "01900000-0000-7000-8000-00000000000f",
+      "created_at": "2026-10-01T09:00:00Z",
+      "metric": "false_positive_rate",
+      "comparator": "<=",
+      "threshold": 1e-06,
+      "dataset": {
+        "id": "fraud-detection-2026",
+        "hash": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+      },
+      "seed": 99,
+      "producer": {
+        "id": "fintech.example"
+      }
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-00000000000f\ncomparator: <=\ncreated_at: '2026-10-01T09:00:00Z'\ndataset:\n  hash: cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd\n  id: fraud-detection-2026\nmetric: false_positive_rate\nproducer:\n  id: fintech.example\nseed: 99\nthreshold: 1.0e-06\nversion: prml/0.1\n",
+    "hash": "ff56657bd0d176dd8018c77461f38cdf5ec475b994a5061ef4d0f749bf4a7491"
+  }
+]

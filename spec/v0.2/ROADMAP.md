@@ -183,7 +183,13 @@ Absolute (`|o - t| ≤ tol`) is simple and what most consumers expect. Relative 
 
 **RFC-Q-04:** Should the always-quoted rule apply to numbers as well?
 
-Numbers in v0.1 are unquoted (`seed: 42`, `threshold: 0.85`). Always-quoting numbers (`seed: '42'`, `threshold: '0.85'`) would close the integer-vs-float ambiguity entirely but at the cost of human readability. Default position: keep numbers unquoted; close the int-vs-float gap with the explicit "threshold always has decimal place" rule (#3 above).
+Numbers in v0.1 are unquoted (`seed: 42`, `threshold: 0.85`). Always-quoting numbers (`seed: '42'`, `threshold: '0.85'`) would close the integer-vs-float ambiguity entirely but at the cost of human readability.
+
+**Updated position (2026-05-01):** evidence from the v0.2 candidate vector run (TV-018, `threshold: 1e-6`) shows that small-magnitude float rendering diverges three ways across Python (`1.0e-06`), JavaScript (`0.000001`), and Go (`1e-06`) — see [Finding 4 in the portability analysis](../analysis/canonicalization-portability-v0.1.md#finding-4-float-rendering-for-small-magnitude-values-diverges-three-ways). Each is a defensible language-stdlib default; specifying a single canonical numeric format would force every implementation to reimplement Python's `repr(float)`, which is brittle.
+
+**Recommendation:** adopt the always-quoted rule for numbers as well as strings. The producer chooses the textual form once (e.g. `threshold: '0.000001'` or `threshold: '1.0e-06'`); verifiers honour it byte-for-byte. Cost: ~5% additional canonical bytes for typical PRML manifests. Benefit: language-stdlib float-rendering quirks become invisible; TV-018 (and any future small-float vector) becomes promotable to normative.
+
+This now joins change #1 (always-quoted strings) under one consistent rule: **all leaf scalars are single-quoted in the canonical form**.
 
 **RFC-Q-05:** Should signatures be detached (in `.prml.sig`) or inline (as a `producer.signature` field)?
 
