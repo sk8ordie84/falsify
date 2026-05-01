@@ -358,7 +358,7 @@ reference implementation in Python. Conformance to this specification is
 defined as:
 
 1. Producing canonical bytes byte-equivalent to the falsify reference for the
-   PRML test vector suite (Appendix B, forthcoming).
+   PRML test vector suite (Appendix B).
 2. Computing manifest hashes byte-equivalent to the reference.
 3. Emitting exit codes per §7 for the test vector suite.
 
@@ -424,14 +424,50 @@ b2c3a1f0d8e7c6b5a4938271605f4e3d2c1b0a9988776655443322110ffeeddc
 
 ## Appendix B — Test Vectors
 
-*(To be published with v0.2. See `falsify/tests/spec_conformance/` for the
-reference vector seed.)*
+A conformance suite of **12 test vectors** is published alongside this
+specification at:
+
+> `https://github.com/sk8ordie84/falsify/tree/main/spec/test-vectors/v0.1/`
+
+Each vector defines:
+
+1. An **input manifest** (logical YAML mapping; key order irrelevant).
+2. The **canonical UTF-8 byte sequence** the canonicalizer MUST produce.
+3. The **lowercase hex SHA-256** of those bytes.
+
+An implementation conforms to PRML v0.1 if and only if it reproduces all
+12 vectors exactly. The vectors cover:
+
+| ID | Property exercised |
+|---|---|
+| TV-001 | Minimal valid manifest (matches Appendix A) |
+| TV-002 | Key-ordering invariance — random insertion order produces same hash |
+| TV-003 | Single-bit-of-content sensitivity — `0.85` vs `0.86` produces different hash |
+| TV-004 | Optional fields populated (`model.id`, `model.hash`, `dataset.uri`) |
+| TV-005 | Unicode in `producer.id` (UTF-8 byte handling) |
+| TV-006 | Maximum seed value (`2⁶⁴ - 1`) |
+| TV-007 | Minimum seed value (`0`) |
+| TV-008 | Equality comparator (`==` with integer-valued threshold) |
+| TV-009 | Amendment with `prior_hash` linkage to TV-001 |
+| TV-010 | `pass@k` metric with model fields |
+| TV-011 | AUROC with strict-greater comparator (`>`) |
+| TV-012 | Regression metric (`mae`) with `<=` minimization |
+
+Vectors are regeneratable via
+`python3 spec/test-vectors/v0.1/generate.py`. Once v0.1 is frozen
+(2026-05-22), the vectors and their hashes are immutable. Any change
+requires a v0.2 spec bump.
+
+Conformance is enforceable via the falsify reference test suite
+(`tests/test_prml_vectors.py`); CI fails if any vector diverges.
 
 ---
 
 ## Change Log
 
 - **v0.1 (2026-05-01)** — Initial public draft.
+- **v0.1 (2026-05-01)** — Test vector suite (12 vectors) published in
+  `spec/test-vectors/v0.1/`; Appendix B finalized.
 
 ---
 

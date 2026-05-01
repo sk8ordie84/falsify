@@ -1,0 +1,290 @@
+[
+  {
+    "id": "TV-001",
+    "title": "Minimal valid manifest",
+    "description": "The smallest manifest that satisfies all required fields. Matches Appendix A of the PRML v0.1 specification.",
+    "input": {
+      "version": "prml/0.1",
+      "claim_id": "01900000-0000-7000-8000-000000000000",
+      "created_at": "2026-05-01T12:00:00Z",
+      "metric": "accuracy",
+      "comparator": ">=",
+      "threshold": 0.85,
+      "dataset": {
+        "id": "imagenet-val-2012",
+        "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "seed": 42,
+      "producer": {
+        "id": "studio-11.co"
+      }
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-000000000000\ncomparator: '>='\ncreated_at: '2026-05-01T12:00:00Z'\ndataset:\n  hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n  id: imagenet-val-2012\nmetric: accuracy\nproducer:\n  id: studio-11.co\nseed: 42\nthreshold: 0.85\nversion: prml/0.1\n",
+    "hash": "1a3466cc08ee7fb60a726ea1c4db6ecf48a9f847b9b7523bfb54b2ffaefee546"
+  },
+  {
+    "id": "TV-002",
+    "title": "Key ordering — random insertion order",
+    "description": "Same fields as TV-001 but constructed with reverse insertion order. Hash MUST equal TV-001 because canonicalization sorts keys lexicographically.",
+    "input": {
+      "seed": 42,
+      "producer": {
+        "id": "studio-11.co"
+      },
+      "version": "prml/0.1",
+      "threshold": 0.85,
+      "metric": "accuracy",
+      "dataset": {
+        "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "id": "imagenet-val-2012"
+      },
+      "created_at": "2026-05-01T12:00:00Z",
+      "comparator": ">=",
+      "claim_id": "01900000-0000-7000-8000-000000000000"
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-000000000000\ncomparator: '>='\ncreated_at: '2026-05-01T12:00:00Z'\ndataset:\n  hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n  id: imagenet-val-2012\nmetric: accuracy\nproducer:\n  id: studio-11.co\nseed: 42\nthreshold: 0.85\nversion: prml/0.1\n",
+    "hash": "1a3466cc08ee7fb60a726ea1c4db6ecf48a9f847b9b7523bfb54b2ffaefee546"
+  },
+  {
+    "id": "TV-003",
+    "title": "Threshold mutation — single field change",
+    "description": "Identical to TV-001 except threshold is 0.86 instead of 0.85. Hash MUST differ.",
+    "input": {
+      "version": "prml/0.1",
+      "claim_id": "01900000-0000-7000-8000-000000000000",
+      "created_at": "2026-05-01T12:00:00Z",
+      "metric": "accuracy",
+      "comparator": ">=",
+      "threshold": 0.86,
+      "dataset": {
+        "id": "imagenet-val-2012",
+        "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "seed": 42,
+      "producer": {
+        "id": "studio-11.co"
+      }
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-000000000000\ncomparator: '>='\ncreated_at: '2026-05-01T12:00:00Z'\ndataset:\n  hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n  id: imagenet-val-2012\nmetric: accuracy\nproducer:\n  id: studio-11.co\nseed: 42\nthreshold: 0.86\nversion: prml/0.1\n",
+    "hash": "b96b5b8d613e29d8c28c1cf91c03821b02224c41188c6128743fa2d55639d4bb"
+  },
+  {
+    "id": "TV-004",
+    "title": "Optional fields — model and dataset.uri populated",
+    "description": "Manifest with optional model.id, model.hash, and dataset.uri populated. Tests serialization of optional fields.",
+    "input": {
+      "version": "prml/0.1",
+      "claim_id": "01900000-0000-7000-8000-000000000001",
+      "created_at": "2026-06-15T09:30:00Z",
+      "metric": "f1",
+      "comparator": ">=",
+      "threshold": 0.78,
+      "dataset": {
+        "id": "glue-mrpc",
+        "hash": "9b9a7c5e7d6c5f4e3d2c1b0a9f8e7d6c5b4a3928171615141312111009080706",
+        "uri": "https://gluebenchmark.com/tasks/mrpc"
+      },
+      "model": {
+        "id": "bert-base-uncased",
+        "hash": "1f3c8a9d2b4e5c6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f"
+      },
+      "seed": 1337,
+      "producer": {
+        "id": "studio-11.co"
+      }
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-000000000001\ncomparator: '>='\ncreated_at: '2026-06-15T09:30:00Z'\ndataset:\n  hash: 9b9a7c5e7d6c5f4e3d2c1b0a9f8e7d6c5b4a3928171615141312111009080706\n  id: glue-mrpc\n  uri: https://gluebenchmark.com/tasks/mrpc\nmetric: f1\nmodel:\n  hash: 1f3c8a9d2b4e5c6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f\n  id: bert-base-uncased\nproducer:\n  id: studio-11.co\nseed: 1337\nthreshold: 0.78\nversion: prml/0.1\n",
+    "hash": "609308e259dc3e75909b6c81a6bf0230a34a0b9af6726e46675a66817a80d304"
+  },
+  {
+    "id": "TV-005",
+    "title": "Unicode in producer.id",
+    "description": "Producer ID contains non-ASCII characters (Turkish). Tests UTF-8 byte-level handling.",
+    "input": {
+      "version": "prml/0.1",
+      "claim_id": "01900000-0000-7000-8000-000000000002",
+      "created_at": "2026-05-01T12:00:00Z",
+      "metric": "accuracy",
+      "comparator": ">=",
+      "threshold": 0.85,
+      "dataset": {
+        "id": "imagenet-val-2012",
+        "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "seed": 42,
+      "producer": {
+        "id": "üniversite.edu.tr"
+      }
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-000000000002\ncomparator: '>='\ncreated_at: '2026-05-01T12:00:00Z'\ndataset:\n  hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n  id: imagenet-val-2012\nmetric: accuracy\nproducer:\n  id: üniversite.edu.tr\nseed: 42\nthreshold: 0.85\nversion: prml/0.1\n",
+    "hash": "6cf48a868f8f2fec59647d4b8327a27aba7dc219c14ab799ad85398a5aa9e1b6"
+  },
+  {
+    "id": "TV-006",
+    "title": "Maximum seed value",
+    "description": "Seed = 2^64 - 1 = 18446744073709551615. Tests integer boundary handling.",
+    "input": {
+      "version": "prml/0.1",
+      "claim_id": "01900000-0000-7000-8000-000000000003",
+      "created_at": "2026-05-01T12:00:00Z",
+      "metric": "accuracy",
+      "comparator": ">=",
+      "threshold": 0.5,
+      "dataset": {
+        "id": "test-dataset",
+        "hash": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "seed": 18446744073709551615,
+      "producer": {
+        "id": "edge.example"
+      }
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-000000000003\ncomparator: '>='\ncreated_at: '2026-05-01T12:00:00Z'\ndataset:\n  hash: '0000000000000000000000000000000000000000000000000000000000000000'\n  id: test-dataset\nmetric: accuracy\nproducer:\n  id: edge.example\nseed: 18446744073709551615\nthreshold: 0.5\nversion: prml/0.1\n",
+    "hash": "57c71c567e0c4d86c691e311634730cd1ff0c65308f3a917d62d89d36d31c81d"
+  },
+  {
+    "id": "TV-007",
+    "title": "Minimum seed value",
+    "description": "Seed = 0. Tests integer lower-boundary handling.",
+    "input": {
+      "version": "prml/0.1",
+      "claim_id": "01900000-0000-7000-8000-000000000004",
+      "created_at": "2026-05-01T12:00:00Z",
+      "metric": "accuracy",
+      "comparator": ">=",
+      "threshold": 0.5,
+      "dataset": {
+        "id": "test-dataset",
+        "hash": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "seed": 0,
+      "producer": {
+        "id": "edge.example"
+      }
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-000000000004\ncomparator: '>='\ncreated_at: '2026-05-01T12:00:00Z'\ndataset:\n  hash: '0000000000000000000000000000000000000000000000000000000000000000'\n  id: test-dataset\nmetric: accuracy\nproducer:\n  id: edge.example\nseed: 0\nthreshold: 0.5\nversion: prml/0.1\n",
+    "hash": "766d6ca6ee06b619bf4e49f586eff0e979adcd034abae31d2c52b93d00ef7b92"
+  },
+  {
+    "id": "TV-008",
+    "title": "Equality comparator",
+    "description": "Comparator is `==` and threshold is an integer-valued float. Tests strict-match semantics.",
+    "input": {
+      "version": "prml/0.1",
+      "claim_id": "01900000-0000-7000-8000-000000000005",
+      "created_at": "2026-05-01T12:00:00Z",
+      "metric": "exact_match",
+      "comparator": "==",
+      "threshold": 1.0,
+      "dataset": {
+        "id": "synth-100",
+        "hash": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+      },
+      "seed": 7,
+      "producer": {
+        "id": "studio-11.co"
+      }
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-000000000005\ncomparator: ==\ncreated_at: '2026-05-01T12:00:00Z'\ndataset:\n  hash: abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789\n  id: synth-100\nmetric: exact_match\nproducer:\n  id: studio-11.co\nseed: 7\nthreshold: 1.0\nversion: prml/0.1\n",
+    "hash": "fc2bf632dfb10bac8cf88b0c0756af2b53175c9b3078ae34aaf6ce63102c1b56"
+  },
+  {
+    "id": "TV-009",
+    "title": "Amendment manifest with prior_hash",
+    "description": "Manifest amends TV-001 by raising threshold to 0.87. prior_hash points to TV-001's digest. Forms a 2-link chain.",
+    "input": {
+      "version": "prml/0.1",
+      "claim_id": "01900000-0000-7000-8000-000000000006",
+      "created_at": "2026-05-15T14:00:00Z",
+      "metric": "accuracy",
+      "comparator": ">=",
+      "threshold": 0.87,
+      "dataset": {
+        "id": "imagenet-val-2012",
+        "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "seed": 42,
+      "producer": {
+        "id": "studio-11.co"
+      },
+      "prior_hash": "1a3466cc08ee7fb60a726ea1c4db6ecf48a9f847b9b7523bfb54b2ffaefee546",
+      "notes": "Threshold raised after dataset re-curation found 12 mislabeled examples."
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-000000000006\ncomparator: '>='\ncreated_at: '2026-05-15T14:00:00Z'\ndataset:\n  hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n  id: imagenet-val-2012\nmetric: accuracy\nnotes: Threshold raised after dataset re-curation found 12 mislabeled examples.\nprior_hash: 1a3466cc08ee7fb60a726ea1c4db6ecf48a9f847b9b7523bfb54b2ffaefee546\nproducer:\n  id: studio-11.co\nseed: 42\nthreshold: 0.87\nversion: prml/0.1\n",
+    "hash": "29c60f7ccfb1f12777127785be25e3b2ca121b9b85b020f7bbd8e89a65ff1a04"
+  },
+  {
+    "id": "TV-010",
+    "title": "pass@k metric for code generation",
+    "description": "Realistic LLM evaluation manifest using pass@k. Tests metric extensibility.",
+    "input": {
+      "version": "prml/0.1",
+      "claim_id": "01900000-0000-7000-8000-000000000007",
+      "created_at": "2026-07-01T08:00:00Z",
+      "metric": "pass@1",
+      "comparator": ">=",
+      "threshold": 0.65,
+      "dataset": {
+        "id": "humaneval",
+        "hash": "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
+        "uri": "https://github.com/openai/human-eval"
+      },
+      "model": {
+        "id": "claude-opus-4-7",
+        "hash": "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+      },
+      "seed": 314159,
+      "producer": {
+        "id": "anthropic.com"
+      }
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-000000000007\ncomparator: '>='\ncreated_at: '2026-07-01T08:00:00Z'\ndataset:\n  hash: fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210\n  id: humaneval\n  uri: https://github.com/openai/human-eval\nmetric: pass@1\nmodel:\n  hash: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef\n  id: claude-opus-4-7\nproducer:\n  id: anthropic.com\nseed: 314159\nthreshold: 0.65\nversion: prml/0.1\n",
+    "hash": "60f8eb35dd21c364811549b8a45ea50dc70a01ef7210cfcc43b6aa9915fc88c6"
+  },
+  {
+    "id": "TV-011",
+    "title": "AUROC with low threshold",
+    "description": "Medical-imaging-style claim with threshold near 0.5 (random baseline). Tests low-threshold semantics.",
+    "input": {
+      "version": "prml/0.1",
+      "claim_id": "01900000-0000-7000-8000-000000000008",
+      "created_at": "2026-08-12T10:00:00Z",
+      "metric": "auroc",
+      "comparator": ">",
+      "threshold": 0.55,
+      "dataset": {
+        "id": "chestx-ray-14",
+        "hash": "1010101010101010101010101010101010101010101010101010101010101010"
+      },
+      "seed": 2718,
+      "producer": {
+        "id": "research-hospital.example"
+      }
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-000000000008\ncomparator: '>'\ncreated_at: '2026-08-12T10:00:00Z'\ndataset:\n  hash: '1010101010101010101010101010101010101010101010101010101010101010'\n  id: chestx-ray-14\nmetric: auroc\nproducer:\n  id: research-hospital.example\nseed: 2718\nthreshold: 0.55\nversion: prml/0.1\n",
+    "hash": "91104f15ee95b7a61869e30bd1539abfd718652288daa6bb7418337a8ffc32de"
+  },
+  {
+    "id": "TV-012",
+    "title": "MAE for regression",
+    "description": "Regression metric with `<=` comparator. Tests minimization-style claims.",
+    "input": {
+      "version": "prml/0.1",
+      "claim_id": "01900000-0000-7000-8000-000000000009",
+      "created_at": "2026-09-01T15:00:00Z",
+      "metric": "mae",
+      "comparator": "<=",
+      "threshold": 2.5,
+      "dataset": {
+        "id": "boston-housing",
+        "hash": "9999888877776666555544443333222211110000aaaaffffeeeeddddccccbbbb"
+      },
+      "seed": 1,
+      "producer": {
+        "id": "studio-11.co"
+      }
+    },
+    "canonical": "claim_id: 01900000-0000-7000-8000-000000000009\ncomparator: <=\ncreated_at: '2026-09-01T15:00:00Z'\ndataset:\n  hash: 9999888877776666555544443333222211110000aaaaffffeeeeddddccccbbbb\n  id: boston-housing\nmetric: mae\nproducer:\n  id: studio-11.co\nseed: 1\nthreshold: 2.5\nversion: prml/0.1\n",
+    "hash": "ec1d18427451f0bd7886c6ac4027f07a779f899035c27ea52cb2765212866424"
+  }
+]
