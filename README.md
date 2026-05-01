@@ -422,7 +422,12 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for the post-hackathon direction.
+Two roadmaps run alongside each other:
+
+- **CLI tool roadmap:** [ROADMAP.md](ROADMAP.md) — `falsify` features, integrations, dependencies. CLI v0.2 targeted 2026-06-15.
+- **Specification roadmap:** [spec/v0.2/ROADMAP.md](spec/v0.2/ROADMAP.md) — PRML format evolution, canonicalization grammar, conformance. Spec v0.2 freeze 2026-05-22.
+
+The CLI is downstream of the spec: when spec v0.2 freezes, CLI v0.2 follows about three weeks later. CLI v0.3 is loosely scoped for Q4 2026.
 
 ## Trust model
 
