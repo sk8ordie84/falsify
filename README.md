@@ -55,6 +55,27 @@ See [docs/CASE_STUDIES.md](docs/CASE_STUDIES.md) for three concrete adoption sto
 
 ---
 
+## Specification artifacts
+
+Falsify is the reference implementation of **PRML v0.1** — Pre-Registered ML Manifest Specification. The spec, conformance suite, and adjacent documents live under `spec/`:
+
+- **[`spec/PRML-v0.1.md`](spec/PRML-v0.1.md)** — the spec (RFC-style, CC BY 4.0)
+- **[`spec/test-vectors/v0.1/`](spec/test-vectors/v0.1/)** — 12 conformance vectors with locked SHA-256 digests
+- **[`spec/analysis/positioning-v0.1.md`](spec/analysis/positioning-v0.1.md)** — PRML vs in-toto / SLSA / Model Cards / HELM / ClinicalTrials.gov
+- **[`spec/analysis/canonicalization-portability-v0.1.md`](spec/analysis/canonicalization-portability-v0.1.md)** — three cross-language findings from the JS second implementation
+- **[`spec/compliance/AI-Act-mapping-v0.1.md`](spec/compliance/AI-Act-mapping-v0.1.md)** — EU AI Act Article 12/17/18/50/72/73 mapping
+- **[`spec/compliance/landing.md`](spec/compliance/landing.md)** — compliance-audience landing copy
+- **[`spec/paper/`](spec/paper/)** — 14-page arXiv preprint (LaTeX, CC BY 4.0)
+- **[`spec/v0.2/ROADMAP.md`](spec/v0.2/ROADMAP.md)** — v0.2 RFC roadmap (freeze 2026-05-22)
+
+**Second reference implementation:**
+
+- **[`impl/js/`](impl/js/)** — Node.js implementation, 404 LOC, 12/12 v0.1 vectors pass byte-for-byte
+
+Hosted spec at [spec.falsify.dev/v0.1](https://spec.falsify.dev/v0.1). Public review thread at [GitHub Discussion #6](https://github.com/sk8ordie84/falsify/discussions/6). Comments via `hello@studio-11.co`.
+
+---
+
 ## Why
 
 AI agents make empirical claims all day — *"accuracy is up"*, *"the
@@ -365,7 +386,13 @@ ln -sf "$(pwd)/hooks/commit-msg" .git/hooks/commit-msg
 
 ## Repository layout
 
-- `falsify.py` — single-file CLI, stdlib + pyyaml only.
+- `falsify.py` — single-file Python CLI, stdlib + pyyaml only.
+- `impl/js/falsify.js` — Node.js second reference implementation (12/12 vectors).
+- `spec/PRML-v0.1.md` + `spec/test-vectors/v0.1/` — spec + conformance suite.
+- `spec/analysis/` — positioning + canonicalization portability findings.
+- `spec/compliance/` — EU AI Act mapping + compliance landing copy.
+- `spec/paper/` — 14-page arXiv preprint (LaTeX).
+- `spec/v0.2/ROADMAP.md` — v0.2 RFC roadmap.
 - `hypothesis.schema.yaml` — spec schema (claim, falsification,
   experiment, environment, artifacts).
 - `examples/hello_claim/` — tiny smoke-test fixture.
@@ -376,7 +403,7 @@ ln -sf "$(pwd)/hooks/commit-msg" .git/hooks/commit-msg
 - `.claude/skills/` — the five in-session skills.
 - `.claude/agents/` — the two forked-context subagents.
 - `.claude/commands/` — the three slash commands.
-- `.github/workflows/` — CI.
+- `.github/workflows/` — CI + PRML manifest verification.
 
 ## Self-dogfooding
 
