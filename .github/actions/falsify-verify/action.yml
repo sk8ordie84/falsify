@@ -1,0 +1,58 @@
+name: 'falsify-verify'
+description: 'Verify PRML manifests in a repository — fail CI on hash mismatch (TAMPERED) or claim falsification (FAIL).'
+author: 'Studio-11'
+branding:
+  icon: 'shield'
+  color: 'green'
+
+inputs:
+  manifest-glob:
+    description: 'Glob pattern to locate PRML manifests. Defaults to all .prml.yaml files in the repo.'
+    required: false
+    default: '**/*.prml.yaml'
+  fail-on-tampered:
+    description: 'If true, exit 1 when any manifest hash does not match its sidecar. Default: true.'
+    required: false
+    default: 'true'
+  fail-on-falsified:
+    description: 'If true, exit 1 when verifier emits exit code 10 (claim FAIL). Default: true.'
+    required: false
+    default: 'true'
+  python-version:
+    description: 'Python version to run falsify under.'
+    required: false
+    default: '3.12'
+
+outputs:
+  manifests-checked:
+    description: 'Number of PRML manifests verified.'
+  tampered-count:
+    description: 'Number of manifests with hash mismatch.'
+  falsified-count:
+    description: 'Number of manifests whose claim verified to FAIL.'
+  pass-count:
+    description: 'Number of manifests whose claim verified to PASS.'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install falsify
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install falsify
+
+    - name: Verify PRML manifests
+      id: verify
+      shell: bash
+      env:
+        MANIFEST_GLOB: ${{ inputs.manifest-glob }}
+        FAIL_TAMPERED: ${{ inputs.fail-on-tampered }}
+        FAIL_FALSIFIED: ${{ inputs.fail-on-falsified }}
+      run: |
+        python "${{ github.action_path }}/verify.py"

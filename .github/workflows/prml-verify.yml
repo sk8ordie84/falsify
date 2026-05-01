@@ -1,0 +1,113 @@
+name: PRML Manifest Verification
+
+on:
+  push:
+    paths:
+      - '**/*.prml.yaml'
+      - '**/*.prml.sha256'
+      - '.github/actions/falsify-verify/**'
+      - '.github/workflows/prml-verify.yml'
+  pull_request:
+    paths:
+      - '**/*.prml.yaml'
+      - '**/*.prml.sha256'
+      - '.github/actions/falsify-verify/**'
+      - '.github/workflows/prml-verify.yml'
+  schedule:
+    # Daily at 03:00 UTC — catches drift if any manifest is edited without
+    # updating the sidecar hash.
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Verify all PRML manifests in repo
+        uses: ./.github/actions/falsify-verify
+        with:
+          manifest-glob: '**/*.prml.yaml'
+          fail-on-tampered: 'true'
+
+  test-action-self:
+    runs-on: ubuntu-latest
+    name: 'Test action against fixture manifests'
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install pyyaml for fixture generation
+        run: pip install pyyaml
+
+      - name: Generate fixture manifests + sidecars
+        run: |
+          mkdir -p .prml-fixtures
+          python3 - <<'PY'
+          import hashlib, yaml
+          from pathlib import Path
+
+          def canonicalize(s):
+              return yaml.safe_dump(s, sort_keys=True, default_flow_style=False, allow_unicode=True, width=4096)
+
+          good = {
+              "version": "prml/0.1",
+              "claim_id": "01900000-0000-7000-8000-000000000010",
+              "created_at": "2026-05-01T12:00:00Z",
+              "metric": "accuracy",
+              "comparator": ">=",
+              "threshold": 0.85,
+              "dataset": {"id": "fixture-good", "hash": "0" * 64},
+              "seed": 42,
+              "producer": {"id": "studio-11.co"},
+          }
+          tampered = dict(good)
+          tampered["claim_id"] = "01900000-0000-7000-8000-000000000011"
+          tampered["threshold"] = 0.99  # adversarial post-lock edit
+
+          # Write good manifest with correct sidecar
+          good_path = Path(".prml-fixtures/good.prml.yaml")
+          good_path.write_text(canonicalize(good))
+          h = hashlib.sha256(canonicalize(good).encode("utf-8")).hexdigest()
+          Path(".prml-fixtures/good.prml.sha256").write_text(h + "\n")
+
+          # Write tampered manifest with INCORRECT (stale) sidecar — sidecar
+          # contains the hash of a DIFFERENT spec (the good one), simulating
+          # a silent post-lock edit that didn't update the sidecar.
+          tampered_path = Path(".prml-fixtures/tampered.prml.yaml")
+          tampered_path.write_text(canonicalize(tampered))
+          # Sidecar deliberately holds the GOOD hash, not the tampered one
+          Path(".prml-fixtures/tampered.prml.sha256").write_text(h + "\n")
+
+          print("Fixtures written:")
+          print(f"  good     → hash {h[:16]}…")
+          print(f"  tampered → sidecar still claims hash {h[:16]}… (mismatch will be detected)")
+          PY
+
+      - name: Run action — should detect 1 tampered manifest and fail
+        id: verify
+        continue-on-error: true
+        uses: ./.github/actions/falsify-verify
+        with:
+          manifest-glob: '.prml-fixtures/*.prml.yaml'
+          fail-on-tampered: 'true'
+
+      - name: Assert action correctly detected tampering
+        run: |
+          if [ "${{ steps.verify.outcome }}" != "failure" ]; then
+            echo "::error::action should have failed on tampered fixture but did not"
+            exit 1
+          fi
+          if [ "${{ steps.verify.outputs.tampered-count }}" != "1" ]; then
+            echo "::error::expected tampered-count=1, got ${{ steps.verify.outputs.tampered-count }}"
+            exit 1
+          fi
+          if [ "${{ steps.verify.outputs.pass-count }}" != "1" ]; then
+            echo "::error::expected pass-count=1, got ${{ steps.verify.outputs.pass-count }}"
+            exit 1
+          fi
+          echo "✅ falsify-verify correctly detected 1 tampered manifest and 1 verified manifest."
