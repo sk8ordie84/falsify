@@ -1,3 +1,3 @@
 module github.com/sk8ordie84/falsify/impl/go
 
-go 1.26.2
+go 1.21
