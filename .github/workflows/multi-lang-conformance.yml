@@ -1,0 +1,185 @@
+name: Multi-language conformance
+
+# Asserts that every reference implementation (Python, Node.js, Go, Rust)
+# reproduces the v0.1 normative suite (12 vectors) AND the v0.2 candidate
+# suite (6 vectors) byte-for-byte. Total verification surface per run:
+# 4 implementations × 18 vectors = 72 byte-for-byte agreements.
+#
+# A failure in any language is a portability regression. Treat it as a
+# specification-level event: either the canonicalizer in that language
+# has drifted, or the spec itself has surfaced a new portability finding
+# that needs documenting in spec/analysis/canonicalization-portability-v0.1.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'falsify.py'
+      - 'impl/**'
+      - 'spec/test-vectors/**'
+      - 'spec/v0.2/test-vectors-candidates.json'
+      - 'spec/v0.2/generate-candidates.py'
+      - '.github/workflows/multi-lang-conformance.yml'
+  pull_request:
+    paths:
+      - 'falsify.py'
+      - 'impl/**'
+      - 'spec/test-vectors/**'
+      - 'spec/v0.2/test-vectors-candidates.json'
+      - 'spec/v0.2/generate-candidates.py'
+      - '.github/workflows/multi-lang-conformance.yml'
+  schedule:
+    # Daily at 04:00 UTC. Catches drift even when no code changes if a
+    # dependency update silently shifts canonical bytes (e.g., a PyYAML
+    # safe_dump tweak).
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+jobs:
+
+  python-conformance:
+    name: Python (PyYAML safe_dump reference)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install pyyaml
+        run: pip install pyyaml
+
+      - name: Conformance — v0.1 normative suite (12 vectors)
+        run: |
+          python3 - <<'PY'
+          import json, hashlib, sys
+          sys.path.insert(0, '.')
+          import falsify
+          vectors = json.load(open('spec/test-vectors/v0.1/test-vectors.json'))
+          fails = 0
+          for v in vectors:
+              produced = falsify._canonicalize(v['input'])
+              h = hashlib.sha256(produced.encode('utf-8')).hexdigest()
+              ok = produced == v['canonical'] and h == v['hash']
+              status = 'PASS' if ok else 'FAIL'
+              print(f"{status}  {v['id']}  {v['title']}")
+              if not ok:
+                  fails += 1
+          print(f"\nResult: {len(vectors)-fails}/{len(vectors)} vectors passed.")
+          sys.exit(10 if fails else 0)
+          PY
+
+      - name: Conformance — v0.2 candidate suite (6 vectors)
+        run: |
+          python3 - <<'PY'
+          import json, hashlib, sys
+          sys.path.insert(0, '.')
+          import falsify
+          vectors = json.load(open('spec/v0.2/test-vectors-candidates.json'))
+          fails = 0
+          for v in vectors:
+              produced = falsify._canonicalize(v['input'])
+              h = hashlib.sha256(produced.encode('utf-8')).hexdigest()
+              ok = produced == v['canonical'] and h == v['hash']
+              status = 'PASS' if ok else 'FAIL'
+              print(f"{status}  {v['id']}  {v['title']}")
+              if not ok:
+                  fails += 1
+          print(f"\nResult: {len(vectors)-fails}/{len(vectors)} vectors passed.")
+          sys.exit(10 if fails else 0)
+          PY
+
+  js-conformance:
+    name: Node.js (impl/js)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Conformance — v0.1 normative suite (12 vectors)
+        run: node impl/js/falsify.js test-vectors spec/test-vectors/v0.1/test-vectors.json
+
+      - name: Conformance — v0.2 candidate suite (6 vectors)
+        run: node impl/js/falsify.js test-vectors spec/v0.2/test-vectors-candidates.json
+
+  go-conformance:
+    name: Go (impl/go)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build
+        run: |
+          cd impl/go
+          go build -o falsify-go ./falsify.go
+
+      - name: Conformance — v0.1 normative suite (12 vectors)
+        run: ./impl/go/falsify-go test-vectors spec/test-vectors/v0.1/test-vectors.json
+
+      - name: Conformance — v0.2 candidate suite (6 vectors)
+        run: ./impl/go/falsify-go test-vectors spec/v0.2/test-vectors-candidates.json
+
+  rust-conformance:
+    name: Rust (impl/rust)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry + target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            impl/rust/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('impl/rust/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build
+        run: |
+          cd impl/rust
+          cargo build --release --quiet
+
+      - name: Conformance — v0.1 normative suite (12 vectors)
+        run: ./impl/rust/target/release/falsify-rs test-vectors spec/test-vectors/v0.1/test-vectors.json
+
+      - name: Conformance — v0.2 candidate suite (6 vectors)
+        run: ./impl/rust/target/release/falsify-rs test-vectors spec/v0.2/test-vectors-candidates.json
+
+  conformance-summary:
+    name: All four implementations agree
+    runs-on: ubuntu-latest
+    needs: [python-conformance, js-conformance, go-conformance, rust-conformance]
+    if: always()
+    steps:
+      - name: Verify all conformance jobs passed
+        run: |
+          if [[ "${{ needs.python-conformance.result }}" != "success" || \
+                "${{ needs.js-conformance.result }}" != "success" || \
+                "${{ needs.go-conformance.result }}" != "success" || \
+                "${{ needs.rust-conformance.result }}" != "success" ]]; then
+            echo "::error::At least one reference implementation failed conformance."
+            echo "  Python: ${{ needs.python-conformance.result }}"
+            echo "  JS:     ${{ needs.js-conformance.result }}"
+            echo "  Go:     ${{ needs.go-conformance.result }}"
+            echo "  Rust:   ${{ needs.rust-conformance.result }}"
+            echo ""
+            echo "This is a portability regression. Treat as a specification-level event:"
+            echo "  - either a canonicalizer drifted in one language, or"
+            echo "  - a new portability finding has surfaced that needs documenting"
+            echo "    in spec/analysis/canonicalization-portability-v0.1.md."
+            exit 1
+          fi
+          echo "::notice::All four reference implementations passed all 18 vectors byte-for-byte."
