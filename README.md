@@ -68,9 +68,11 @@ Falsify is the reference implementation of **PRML v0.1** — Pre-Registered ML M
 - **[`spec/paper/`](spec/paper/)** — 14-page arXiv preprint (LaTeX, CC BY 4.0)
 - **[`spec/v0.2/ROADMAP.md`](spec/v0.2/ROADMAP.md)** — v0.2 RFC roadmap (freeze 2026-05-22)
 
-**Second reference implementation:**
+**Reference implementations** (three languages, all 12 vectors pass byte-for-byte):
 
-- **[`impl/js/`](impl/js/)** — Node.js implementation, 404 LOC, 12/12 v0.1 vectors pass byte-for-byte
+- **Python:** [`falsify.py`](falsify.py) — original reference, uses PyYAML
+- **Node.js:** [`impl/js/`](impl/js/) — second reference, ~400 LOC, hand-rolled, zero deps
+- **Go:** [`impl/go/`](impl/go/) — third reference, ~450 LOC, hand-rolled, stdlib only
 
 Hosted spec at [spec.falsify.dev/v0.1](https://spec.falsify.dev/v0.1). Public review thread at [GitHub Discussion #6](https://github.com/sk8ordie84/falsify/discussions/6). Comments via `hello@studio-11.co`.
 

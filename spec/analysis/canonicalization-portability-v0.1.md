@@ -1,12 +1,16 @@
 # PRML v0.1 — Canonicalization Portability Findings
 
-**Question:** Is the v0.1 canonicalization implementable in a second language byte-for-byte?
+**Question:** Is the v0.1 canonicalization implementable in second and third languages byte-for-byte?
 
-**Answer:** Yes — a 400-line Node.js implementation reproduces all twelve v0.1 conformance vectors with bit-identical canonical bytes and matching SHA-256 digests. The exercise surfaced three non-obvious cross-language pitfalls that the v0.1 prose specification under-specifies. This document records them so v0.2 can address each in formal grammar form.
+**Answer:** Yes — Node.js (~400 LOC) and Go (~450 LOC) implementations both reproduce all twelve v0.1 conformance vectors with bit-identical canonical bytes and matching SHA-256 digests. The exercise surfaced three non-obvious cross-language pitfalls that the v0.1 prose specification under-specifies, and revealed that the *severity* of each varies by language stdlib. This document records the findings so v0.2 can address each in formal grammar form.
 
-**Source:** [`impl/js/falsify.js`](../../impl/js/falsify.js) — single file, no external runtime deps.
+**Sources:**
 
-**Result:** 12 / 12 vectors pass byte-for-byte.
+- Python reference: [`falsify.py`](../../falsify.py) — uses PyYAML `safe_dump`.
+- Second implementation: [`impl/js/falsify.js`](../../impl/js/falsify.js) — Node.js, hand-rolled, zero runtime deps.
+- Third implementation: [`impl/go/falsify.go`](../../impl/go/falsify.go) — Go, hand-rolled, stdlib only.
+
+**Result:** 12 / 12 vectors pass byte-for-byte in **all three implementations**.
 
 ---
 
@@ -84,31 +88,44 @@ A simpler, more aggressive alternative: **always quote string scalars** in the c
 
 ---
 
+## Severity asymmetry: language stdlib matters
+
+The three findings above are not equally severe across languages. The Go implementation surprisingly handled two of them with **no workaround** because Go's standard `encoding/json` package preserves the raw text of numeric fields when configured with `Decoder.UseNumber()`. The result is a `json.Number` typed `string`, which the canonicalizer can emit directly.
+
+| Finding | Python (PyYAML) | JavaScript (stdlib `JSON`) | Go (stdlib `encoding/json`) |
+|---|---|---|---|
+| 1: uint64 max precision | OK (arbitrary-precision int) | **Workaround needed** (regex BigInt sentinel) | OK (`json.Number` raw string) |
+| 2: integer-valued float typing | OK (PyYAML preserves `float` type) | **Workaround needed** (field-level float hint set) | OK (`json.Number` preserves raw `.0`) |
+| 3: plain-scalar `==` quoting | OK (PyYAML's heuristic accepts) | **Hand-rolled predicate** | **Hand-rolled predicate** |
+
+This is a useful empirical finding: **language choice affects how much extra work a second-implementation author has to do**. Go-from-scratch is closer to PyYAML's behaviour than JavaScript-from-scratch. A Rust implementation using `serde_json::value::Number` would likely fall in the same category as Go.
+
+The lesson for v0.2: a formal grammar removes this asymmetry. With always-quoted strings and always-decimal floats, the language stdlib differences become invisible.
+
 ## Empirical conformance result
 
-The Node.js implementation runs against the v0.1 conformance suite as follows:
+Three implementations now pass the v0.1 conformance suite:
+
+**Node.js implementation** (`impl/js/falsify.js`, ~400 LOC):
 
 ```bash
 $ node impl/js/falsify.js test-vectors spec/test-vectors/v0.1/test-vectors.json
-PASS  TV-001  Minimal valid manifest
-PASS  TV-002  Key ordering — random insertion order
-PASS  TV-003  Threshold mutation — single field change
-PASS  TV-004  Optional fields — model and dataset.uri populated
-PASS  TV-005  Unicode in producer.id
-PASS  TV-006  Maximum seed value
-PASS  TV-007  Minimum seed value
-PASS  TV-008  Equality comparator
-PASS  TV-009  Amendment manifest with prior_hash
-PASS  TV-010  pass@k metric for code generation
-PASS  TV-011  AUROC with low threshold
-PASS  TV-012  MAE for regression
-
+PASS  TV-001 ... PASS  TV-012
 Result: 12/12 vectors passed.
 ```
 
-This demonstrates the format is implementable in a second language, byte-for-byte. The implementation uses approximately 400 lines of Node.js with no runtime dependencies beyond the standard library.
+**Go implementation** (`impl/go/falsify.go`, ~450 LOC):
 
-The implementation is provided as evidence of portability, not as a production tool. Production users should continue to use the Python reference implementation (`falsify`) at this stage. The Node.js implementation will be promoted to a first-class artifact once v0.2 lands with the formal grammar that closes the three findings above.
+```bash
+$ cd impl/go && go build -o falsify-go ./falsify.go
+$ ./falsify-go test-vectors ../../spec/test-vectors/v0.1/test-vectors.json
+PASS  TV-001 ... PASS  TV-012
+Result: 12/12 vectors passed.
+```
+
+Both implementations use only their respective language's standard library. With three independent implementations across Python, JavaScript, and Go all reproducing the canonical bytes byte-for-byte, the v0.1 specification is no longer "what PyYAML does" — it is "what the conformance suite says, reproducibly."
+
+The implementations are provided as evidence of portability, not as production tools. Production users should continue to use the Python reference implementation (`falsify`) at this stage. The Node.js and Go implementations will be promoted to first-class artifacts once v0.2 lands with the formal grammar that closes the three findings above.
 
 ---
 
@@ -125,7 +142,7 @@ These three actions together reduce the spec's portability surface from "depends
 ## What this exercise does *not* prove
 
 - It does not prove that **all** PyYAML edge cases are covered. The Node.js implementation matches the twelve current vectors, which exercise specific cases. Adding new vectors (Unicode normalisation, control characters, very long strings, line-folding edge cases) may reveal further divergences.
-- It does not prove that **all language YAML libraries** agree with PyYAML. We tested Node.js + `js-yaml`. Go's `gopkg.in/yaml.v3`, Rust's `serde_yaml`, and Java's SnakeYAML each have their own quirks. The findings above are likely a subset of the full surface.
+- It does not prove that **all language YAML libraries** agree with PyYAML. We tested Node.js + `js-yaml` (which diverged on `==`) and Go stdlib (which we hand-rolled rather than using `gopkg.in/yaml.v3`). Rust's `serde_yaml` and Java's SnakeYAML each have their own quirks. The findings above are likely a subset of the full surface.
 - It does not prove that **future PyYAML versions** will preserve current behaviour. PyYAML's emitter is deliberately stable but not formally specified. A version bump could in principle change a quoting decision.
 
 The right response to all three is the same: replace dependence on a reference *implementation* with dependence on a specification *grammar*. v0.2.
