@@ -11,7 +11,7 @@ Add to your repo's `.pre-commit-config.yaml`:
 
 ```yaml
 repos:
-  - repo: https://github.com/sk8ordie84/falsify
+  - repo: https://github.com/studio-11-co/falsify
     rev: v0.1.0
     hooks:
       - id: falsify-guard

@@ -81,7 +81,7 @@ pre-registration looks like when AI writes the experiments.
 
 ## 30-second reproduction
 
-    git clone https://github.com/sk8ordie84/falsify
+    git clone https://github.com/studio-11-co/falsify
     cd falsify-hackathon
     pip install -e .
     falsify init --template accuracy
@@ -89,7 +89,7 @@ pre-registration looks like when AI writes the experiments.
     falsify run accuracy
     falsify verdict accuracy   # exit 0 = PASS
 
-Repo lives at `github.com/sk8ordie84/falsify`.
+Repo lives at `github.com/studio-11-co/falsify`.
 
 ## The money shot
 
@@ -192,7 +192,7 @@ MIT — new work, not derived from prior projects. See
 
 ## Submission checklist
 
-- [x] Repo public on GitHub; `sk8ordie84/falsify`.
+- [x] Repo public on GitHub; `studio-11-co/falsify`.
 - [x] CI badge green on `main`.
 - [x] LICENSE file present (MIT).
 - [x] Demo video uploaded — <https://youtu.be/vVZTNeak5PA>.

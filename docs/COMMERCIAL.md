@@ -42,7 +42,7 @@ You **may**:
 
 - Use "falsify" to describe what the software does ("we use falsify
   internally").
-- Link to [github.com/sk8ordie84/falsify](https://github.com/sk8ordie84/falsify)
+- Link to [github.com/studio-11-co/falsify](https://github.com/studio-11-co/falsify)
   in docs and blog posts.
 - Mention "falsify" in academic papers with standard attribution.
 

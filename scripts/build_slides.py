@@ -140,7 +140,7 @@ def slide_5_end() -> Image.Image:
 
     line1 = "Lock the claim before the data."
     line2 = "Or it didn't happen."
-    line3 = "→  github.com/sk8ordie84/falsify"
+    line3 = "→  github.com/studio-11-co/falsify"
 
     _, t, _, b = d.textbbox((0, 0), line1, font=big)
     h1 = b - t

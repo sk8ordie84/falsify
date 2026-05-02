@@ -3,8 +3,8 @@
 **Version:** 0.1 (Draft)
 **Date:** 2026-05-01
 **Status:** Working Draft — Public Review
-**Editor:** Studio-11 \<hello@studio-11.co\>
-**Reference Implementation:** [falsify](https://github.com/sk8ordie84/falsify) (MIT)
+**Editor:** Studio 11 \<hello@studio-11.co\>
+**Reference Implementation:** [falsify](https://github.com/studio-11-co/falsify) (MIT)
 **Canonical URL:** https://spec.falsify.dev/v0.1
 **License:** CC BY 4.0
 
@@ -31,7 +31,7 @@ including the EU AI Act (Regulation 2024/1689) Articles 12 and 18.
 
 This document is a working draft published for public review. It is **not** a
 finished standard. Comments are invited at
-`github.com/sk8ordie84/falsify/discussions` or by email to `hello@studio-11.co`.
+`github.com/studio-11-co/falsify/discussions` or by email to `hello@studio-11.co`.
 
 The next planned revision (v0.2) will incorporate review feedback and freeze the
 canonicalization rules of §3.
@@ -400,7 +400,7 @@ Planning and Control) of ISO/IEC 42001:2023.
 
 ## 10. Reference Implementation
 
-The [falsify](https://github.com/sk8ordie84/falsify) project provides a
+The [falsify](https://github.com/studio-11-co/falsify) project provides a
 reference implementation in Python. Conformance to this specification is
 defined as:
 
@@ -474,7 +474,7 @@ b2c3a1f0d8e7c6b5a4938271605f4e3d2c1b0a9988776655443322110ffeeddc
 A conformance suite of **12 test vectors** is published alongside this
 specification at:
 
-> `https://github.com/sk8ordie84/falsify/tree/main/spec/test-vectors/v0.1/`
+> `https://github.com/studio-11-co/falsify/tree/main/spec/test-vectors/v0.1/`
 
 Each vector defines:
 

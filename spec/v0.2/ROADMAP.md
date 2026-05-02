@@ -167,7 +167,7 @@ The `falsify migrate` subcommand performs this transformation in one step. The o
 
 ## Open RFC questions
 
-The following are not yet resolved. Comment in [GitHub Discussions](https://github.com/sk8ordie84/falsify/discussions/6) before 2026-05-22.
+The following are not yet resolved. Comment in [GitHub Discussions](https://github.com/studio-11-co/falsify/discussions/6) before 2026-05-22.
 
 **RFC-Q-01:** Should `hash_alg: blake3` ship in v0.2 or wait until v0.3?
 
@@ -219,4 +219,4 @@ These are deliberately out of scope and remain v0.3+:
 
 ---
 
-*Working draft, CC BY 4.0. Comments via [GitHub Discussions](https://github.com/sk8ordie84/falsify/discussions/6) or `hello@studio-11.co`.*
+*Working draft, CC BY 4.0. Comments via [GitHub Discussions](https://github.com/studio-11-co/falsify/discussions/6) or `hello@studio-11.co`.*

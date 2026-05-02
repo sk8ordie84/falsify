@@ -41,13 +41,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Verify PRML manifests
-        uses: sk8ordie84/falsify/.github/actions/falsify-verify@main
+        uses: studio-11-co/falsify/.github/actions/falsify-verify@main
 ```
 
 For a published version once we cut a release tag:
 
 ```yaml
-      - uses: sk8ordie84/falsify-verify@v0.1
+      - uses: studio-11-co/falsify-verify@v0.1
 ```
 
 ## Inputs
@@ -103,7 +103,7 @@ Verified against PRML v0.1 — https://spec.falsify.dev/v0.1
 
 ## Reporting issues
 
-If the action fails on a manifest you believe is correct, file an issue at https://github.com/sk8ordie84/falsify/issues with:
+If the action fails on a manifest you believe is correct, file an issue at https://github.com/studio-11-co/falsify/issues with:
 
 1. The manifest content (redact sensitive fields).
 2. The sidecar hash.

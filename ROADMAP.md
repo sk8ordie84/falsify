@@ -95,7 +95,7 @@ Honest scope boundaries — unchanged from v0.1.0:
 
 ## How to influence this roadmap
 
-- For **specification** changes (format, canonicalization, fields, threat model): comment in [GitHub Discussion #6](https://github.com/sk8ordie84/falsify/discussions/6) before the v0.2 freeze on 2026-05-22. The five open RFC questions in [`spec/v0.2/ROADMAP.md`](spec/v0.2/ROADMAP.md) are where outside opinion carries the most weight right now.
+- For **specification** changes (format, canonicalization, fields, threat model): comment in [GitHub Discussion #6](https://github.com/studio-11-co/falsify/discussions/6) before the v0.2 freeze on 2026-05-22. The five open RFC questions in [`spec/v0.2/ROADMAP.md`](spec/v0.2/ROADMAP.md) are where outside opinion carries the most weight right now.
 - For **CLI** changes (UX, integrations, performance): open a GitHub issue with the `roadmap` label describing the use case you need.
 - For a **third-language reference implementation** (Rust, Go, Java, Swift, OCaml…): the [12 conformance vectors](spec/test-vectors/v0.1/) are the contract. If your canonicalizer reproduces all twelve byte-for-byte, your implementation is conformant. Open a PR against `impl/<language>/`.
 - For private or commercial inquiries, contact the maintainer directly: email in [`.github/SECURITY.md`](.github/SECURITY.md), or `hello@studio-11.co`.

@@ -28,9 +28,9 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://falsify.dev"
-Repository = "https://github.com/sk8ordie84/falsify"
-Issues = "https://github.com/sk8ordie84/falsify/issues"
-Changelog = "https://github.com/sk8ordie84/falsify/blob/main/CHANGELOG.md"
+Repository = "https://github.com/studio-11-co/falsify"
+Issues = "https://github.com/studio-11-co/falsify/issues"
+Changelog = "https://github.com/studio-11-co/falsify/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 mcp = ["mcp>=1.0.0"]

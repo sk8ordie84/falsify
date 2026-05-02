@@ -126,13 +126,13 @@ logos are all there.
 
 ## Step 5 — GitHub Action (CLAUDE, 2h) 🟡 **DAY 1**
 
-Separate repo: `sk8ordie84/falsify-action`. One-file action that wraps
+Separate repo: `studio-11-co/falsify-action`. One-file action that wraps
 `falsify guard --wrap -- <command>`. Publish to GitHub Actions
 Marketplace.
 
 ```yaml
 # Usage after shipping:
-- uses: sk8ordie84/falsify-action@v1
+- uses: studio-11-co/falsify-action@v1
   with:
     claim: accuracy
     fail-on-stale: true

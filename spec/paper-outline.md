@@ -7,7 +7,7 @@
 - **Length:** 8 pages + references + appendix (NeurIPS workshop format)
 - **Authors:** Studio-11 *(Independent)* — `hello@studio-11.co`
 - **Correspondence URL:** `https://spec.falsify.dev/v0.1`
-- **Code & data:** `https://github.com/sk8ordie84/falsify` (MIT) · spec under CC BY 4.0
+- **Code & data:** `https://github.com/studio-11-co/falsify` (MIT) · spec under CC BY 4.0
 - **Status:** Outline — to be expanded into full draft by 2026-05-22 (3-week window)
 
 ---
@@ -351,7 +351,7 @@ PRML provides the primitive that ML evaluation has lacked: a cryptographic recor
 - [ ] LaTeX source (NeurIPS workshop template — `neurips_2026.sty` if available, else generic `article`)
 - [ ] PDF compiles clean without warnings
 - [ ] All references with DOIs where available
-- [ ] Code release URL stable (github.com/sk8ordie84/falsify pinned commit)
+- [ ] Code release URL stable (github.com/studio-11-co/falsify pinned commit)
 - [ ] Spec URL stable (spec.falsify.dev/v0.1)
 - [ ] Test vectors public + reproducible
 - [ ] Author affiliation: "Studio-11 (Independent)" — no university, no employer
@@ -363,4 +363,4 @@ PRML provides the primitive that ML evaluation has lacked: a cryptographic recor
 
 ---
 
-*Outline drafted 2026-05-01 by Studio-11. Comments welcome via `hello@studio-11.co` or GitHub Discussions on `sk8ordie84/falsify`.*
+*Outline drafted 2026-05-01 by Studio-11. Comments welcome via `hello@studio-11.co` or GitHub Discussions on `studio-11-co/falsify`.*

@@ -128,4 +128,4 @@ To our review, no existing artifact occupies this intersection. PRML occupies it
 
 ---
 
-*Working draft v0.1, CC BY 4.0. Comments via [GitHub Discussions](https://github.com/sk8ordie84/falsify/discussions/6) or `hello@studio-11.co`.*
+*Working draft v0.1, CC BY 4.0. Comments via [GitHub Discussions](https://github.com/studio-11-co/falsify/discussions/6) or `hello@studio-11.co`.*

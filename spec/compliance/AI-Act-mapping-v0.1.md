@@ -255,8 +255,8 @@ The author's position is that PRML provides a defensible technical foundation fo
 - NIST FIPS 180-4 (2015), Secure Hash Standard (SHS).
 - ENISA Guidelines on Cryptographic Algorithms (2024).
 - PRML v0.1 specification: https://spec.falsify.dev/v0.1
-- PRML reference implementation: https://github.com/sk8ordie84/falsify
+- PRML reference implementation: https://github.com/studio-11-co/falsify
 
 ---
 
-*Document v0.1, drafted 2026-05-01 by Studio-11. Public review via GitHub Discussions on `sk8ordie84/falsify` or `hello@studio-11.co`. CC BY 4.0.*
+*Document v0.1, drafted 2026-05-01 by Studio-11. Public review via GitHub Discussions on `studio-11-co/falsify` or `hello@studio-11.co`. CC BY 4.0.*

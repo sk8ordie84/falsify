@@ -4,7 +4,7 @@ FROM python:3.12-slim AS base
 LABEL org.opencontainers.image.title="Falsification Engine"
 LABEL org.opencontainers.image.description="Pre-registration and CI for AI-agent claims"
 LABEL org.opencontainers.image.licenses="MIT"
-LABEL org.opencontainers.image.source="https://github.com/sk8ordie84/falsify"
+LABEL org.opencontainers.image.source="https://github.com/studio-11-co/falsify"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         git \

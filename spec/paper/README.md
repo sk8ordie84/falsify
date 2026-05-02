@@ -54,7 +54,7 @@ arXiv requires endorsement for first-time submissions in cs.* categories.
 4. Upload: `prml-v0.1-preprint.tex` (and PDF if available — arXiv prefers source)
 5. Title: *Pre-Registered ML Manifests: A Content-Addressed Format for Verifiable Evaluation Claims*
 6. Abstract: copy from `\begin{abstract}` block in the tex file
-7. Comments field: "Working draft v0.1; spec at spec.falsify.dev/v0.1; reference implementation at github.com/sk8ordie84/falsify; v0.2 freeze 2026-05-22"
+7. Comments field: "Working draft v0.1; spec at spec.falsify.dev/v0.1; reference implementation at github.com/studio-11-co/falsify; v0.2 freeze 2026-05-22"
 8. Submit → wait for moderation (typically 1-3 business days)
 
 ### 4. After acceptance

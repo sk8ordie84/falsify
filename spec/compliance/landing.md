@@ -63,7 +63,7 @@ The verifier requires no trust in the producer, no registrar, no third party, no
 
 ## Article-by-article mapping
 
-The full mapping document is at [spec/compliance/AI-Act-mapping-v0.1.md](https://github.com/sk8ordie84/falsify/blob/main/spec/compliance/AI-Act-mapping-v0.1.md). Summary:
+The full mapping document is at [spec/compliance/AI-Act-mapping-v0.1.md](https://github.com/studio-11-co/falsify/blob/main/spec/compliance/AI-Act-mapping-v0.1.md). Summary:
 
 | Article | Obligation | PRML field(s) |
 |---|---|---|
@@ -125,10 +125,10 @@ The cost is one hash function call per claim. The output is a record that surviv
 
 | If you are… | Start with |
 |---|---|
-| A compliance lead evaluating PRML for adoption | The [Article-by-article mapping](https://github.com/sk8ordie84/falsify/blob/main/spec/compliance/AI-Act-mapping-v0.1.md) |
+| A compliance lead evaluating PRML for adoption | The [Article-by-article mapping](https://github.com/studio-11-co/falsify/blob/main/spec/compliance/AI-Act-mapping-v0.1.md) |
 | A notified body assessor | The [verifier exit-code semantics](https://spec.falsify.dev/v0.1#verification-protocol) |
-| An ML team lead | The [reference implementation](https://github.com/sk8ordie84/falsify) and [GitHub Action](https://github.com/sk8ordie84/falsify/tree/main/.github/actions/falsify-verify) |
-| A specification reviewer | The [v0.1 spec](https://spec.falsify.dev/v0.1) and the [Discussion #6](https://github.com/sk8ordie84/falsify/discussions/6) |
+| An ML team lead | The [reference implementation](https://github.com/studio-11-co/falsify) and [GitHub Action](https://github.com/studio-11-co/falsify/tree/main/.github/actions/falsify-verify) |
+| A specification reviewer | The [v0.1 spec](https://spec.falsify.dev/v0.1) and the [Discussion #6](https://github.com/studio-11-co/falsify/discussions/6) |
 
 For substantive feedback on the regulatory mapping, the threat model, or the specification: `hello@studio-11.co`.
 

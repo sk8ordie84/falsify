@@ -10,7 +10,7 @@
 // PyYAML's safe_dump output exactly; we do not use any YAML library.
 //
 // Spec:    https://spec.falsify.dev/v0.1
-// Vectors: https://github.com/sk8ordie84/falsify/tree/main/spec/test-vectors
+// Vectors: https://github.com/studio-11-co/falsify/tree/main/spec/test-vectors
 //
 // Usage:
 //     falsify-rs test-vectors <vectors.json>

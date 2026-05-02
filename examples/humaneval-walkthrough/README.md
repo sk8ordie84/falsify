@@ -224,4 +224,4 @@ The cost is one hash per claim. The benefit is a record that survives any team t
 
 ---
 
-*Walkthrough draft 2026-05-01. Suggestions, refinements, real-data-runs welcome via [GitHub Discussion #6](https://github.com/sk8ordie84/falsify/discussions/6) or `hello@studio-11.co`.*
+*Walkthrough draft 2026-05-01. Suggestions, refinements, real-data-runs welcome via [GitHub Discussion #6](https://github.com/studio-11-co/falsify/discussions/6) or `hello@studio-11.co`.*
