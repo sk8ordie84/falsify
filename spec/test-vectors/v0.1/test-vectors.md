@@ -3,7 +3,7 @@
 **Specification:** [PRML v0.1](https://spec.falsify.dev/v0.1)
 **Reference implementation:** [`falsify`](https://github.com/studio-11-co/falsify) — `_canonicalize()` in `falsify.py`
 **Generated:** 2026-05-01
-**Editor:** Studio-11 — `hello@studio-11.co`
+**Editor:** Studio 11 — `hello@studio-11.co`
 **License:** CC BY 4.0
 
 ---

@@ -1,6 +1,6 @@
 name: 'falsify-verify'
 description: 'Verify PRML manifests in a repository — fail CI on hash mismatch (TAMPERED) or claim falsification (FAIL).'
-author: 'Studio-11'
+author: 'Studio 11'
 branding:
   icon: 'shield'
   color: 'green'

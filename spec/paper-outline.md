@@ -5,7 +5,7 @@
 - **Target venue (preprint):** arXiv `cs.CR` (primary) · `cs.LG` (cross) · `cs.SE` (cross)
 - **Target venue (peer review):** NeurIPS 2026 Workshop on Reproducibility and Reliability in ML *(ML Reproducibility Challenge associated)*; backup: ICLR 2027 Tiny Papers; backup: USENIX Security 2027 (short paper)
 - **Length:** 8 pages + references + appendix (NeurIPS workshop format)
-- **Authors:** Studio-11 *(Independent)* — `hello@studio-11.co`
+- **Authors:** Studio 11 *(Independent)* — `hello@studio-11.co`
 - **Correspondence URL:** `https://spec.falsify.dev/v0.1`
 - **Code & data:** `https://github.com/studio-11-co/falsify` (MIT) · spec under CC BY 4.0
 - **Status:** Outline — to be expanded into full draft by 2026-05-22 (3-week window)
@@ -354,7 +354,7 @@ PRML provides the primitive that ML evaluation has lacked: a cryptographic recor
 - [ ] Code release URL stable (github.com/studio-11-co/falsify pinned commit)
 - [ ] Spec URL stable (spec.falsify.dev/v0.1)
 - [ ] Test vectors public + reproducible
-- [ ] Author affiliation: "Studio-11 (Independent)" — no university, no employer
+- [ ] Author affiliation: "Studio 11 (Independent)" — no university, no employer
 - [ ] Conflict-of-interest statement: none
 - [ ] Funding statement: self-funded
 - [ ] Ethics statement: PRML is a primitive; deployment ethics are out of scope
@@ -363,4 +363,4 @@ PRML provides the primitive that ML evaluation has lacked: a cryptographic recor
 
 ---
 
-*Outline drafted 2026-05-01 by Studio-11. Comments welcome via `hello@studio-11.co` or GitHub Discussions on `studio-11-co/falsify`.*
+*Outline drafted 2026-05-01 by Studio 11. Comments welcome via `hello@studio-11.co` or GitHub Discussions on `studio-11-co/falsify`.*

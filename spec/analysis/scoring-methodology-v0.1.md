@@ -2,7 +2,7 @@
 
 **A methodology for retroactive conformance assessment.**
 
-**Editor:** Studio-11 — `hello@studio-11.co`
+**Editor:** Studio 11 — `hello@studio-11.co`
 **Date:** 2026-05-01
 **Spec under analysis:** [PRML v0.1](https://spec.falsify.dev/v0.1)
 **License:** CC BY 4.0
@@ -307,4 +307,4 @@ The 12-example exercise is reproducible: change any score, recompute the aggrega
 
 ---
 
-*Document drafted 2026-05-01 by Studio-11. Public review via GitHub Discussions on `studio-11-co/falsify`. CC BY 4.0.*
+*Document drafted 2026-05-01 by Studio 11. Public review via GitHub Discussions on `studio-11-co/falsify`. CC BY 4.0.*

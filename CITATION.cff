@@ -9,7 +9,7 @@ abstract: >
   to produce a verdict. The honest amendment path is `lock --force`,
   which writes a new audit entry while preserving the previous hash.
 authors:
-  - name: "Studio-11"
+  - name: "Studio 11"
     website: "https://studio-11.co"
 type: software
 license: MIT

@@ -1,7 +1,7 @@
 # PRML v0.1 — EU AI Act Compliance Mapping
 
 **Working draft for legal & compliance review.**
-**Editor:** Studio-11 — `hello@studio-11.co`
+**Editor:** Studio 11 — `hello@studio-11.co`
 **Date:** 2026-05-01
 **Spec under review:** [PRML v0.1](https://spec.falsify.dev/v0.1)
 **Regulation:** Regulation (EU) 2024/1689 of 13 June 2024 ("AI Act")
@@ -259,4 +259,4 @@ The author's position is that PRML provides a defensible technical foundation fo
 
 ---
 
-*Document v0.1, drafted 2026-05-01 by Studio-11. Public review via GitHub Discussions on `studio-11-co/falsify` or `hello@studio-11.co`. CC BY 4.0.*
+*Document v0.1, drafted 2026-05-01 by Studio 11. Public review via GitHub Discussions on `studio-11-co/falsify` or `hello@studio-11.co`. CC BY 4.0.*
