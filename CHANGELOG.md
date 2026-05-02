@@ -6,6 +6,20 @@ numbers follow [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
 
+## [0.1.3] — 2026-05-02
+
+Documentation, brand, and metadata refresh. No functional code changes.
+
+### Changed
+
+- **Repository transferred** from `github.com/sk8ordie84/falsify` to `github.com/studio-11-co/falsify`. Old URLs 301-redirect to canonical; all in-source references (README, spec, test vectors, preprint .tex, Dockerfile, CITATION.cff, action workflows, package metadata) updated to the new canonical URL.
+- **Editor identity standardised** from `Studio-11` (hyphenated) to `Studio 11` (no hyphen) across spec, CHANGELOG, CITATION, generator footers, and live spec.falsify.dev hosting. Aligns with falsify.dev landing and commercial paperwork.
+- **Pre-commit hook reference** in README updated to `rev: v0.1.3`.
+
+### Why this release
+
+PyPI metadata (`Repository`, `Issues`, `Changelog` URLs in `pyproject.toml`) was frozen at v0.1.2 with the previous GitHub URL. This release refreshes metadata so `pip show falsify` and PyPI's project page reflect the canonical org. No code changes; behaviour identical to 0.1.2.
+
 ## [0.1.2] — 2026-05-01
 
 The PRML specification day — three reference implementations across Python, JavaScript, and Go all reproducing the v0.1 conformance vectors byte-for-byte; six additional v0.2 candidate vectors; four cross-language portability findings documented; arXiv preprint, compliance landing copy, positioning matrix, v0.2 RFC roadmap, and the HumanEval worked example all published. Code itself unchanged from 0.1.1; this release exists to mark a specification-level milestone.

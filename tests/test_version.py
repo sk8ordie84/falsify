@@ -35,14 +35,14 @@ class VersionTests(unittest.TestCase):
     def test_version_subcommand_prints_version(self) -> None:
         result = _run(["version"], cwd=self.cwd)
         self.assertEqual(result.returncode, 0, msg=result.stderr)
-        self.assertIn("0.1.2", result.stdout)
+        self.assertIn("0.1.3", result.stdout)
         self.assertIn("falsify", result.stdout)
 
     def test_version_flag_prints_version(self) -> None:
         result = _run(["--version"], cwd=self.cwd)
         self.assertEqual(result.returncode, 0, msg=result.stderr)
         # argparse's `action='version'` writes to stdout on Python 3.11+.
-        self.assertIn("0.1.2", result.stdout)
+        self.assertIn("0.1.3", result.stdout)
 
     def test_version_subcommand_json_mode(self) -> None:
         result = _run(["version", "--json"], cwd=self.cwd)
