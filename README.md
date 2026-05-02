@@ -15,7 +15,7 @@
 
 ---
 
-> **Latest — 2026-05-01** · v0.1.2 released ([release notes](https://github.com/studio-11-co/falsify/releases/tag/v0.1.2) · `pip install falsify==0.1.2`). PRML v0.1 specification published with **four reference implementations** (Python · [JavaScript](impl/js/) · [Go](impl/go/) · [Rust](impl/rust/)) all reproducing the [12 v0.1 vectors](spec/test-vectors/v0.1/) and [6 v0.2 candidate vectors](spec/v0.2/test-vectors-candidates.json) byte-for-byte. [14-page arXiv preprint](spec/paper/) and [v0.2 RFC roadmap](spec/v0.2/ROADMAP.md) (freeze 2026-05-22) open for public review.
+> **Latest — 2026-05-02** · v0.1.3 released ([release notes](https://github.com/studio-11-co/falsify/releases/tag/v0.1.3) · `pip install falsify==0.1.3`). PRML v0.1 specification published with **four reference implementations** (Python · [JavaScript](impl/js/) · [Go](impl/go/) · [Rust](impl/rust/)) all reproducing the [12 v0.1 vectors](spec/test-vectors/v0.1/) and [6 v0.2 candidate vectors](spec/v0.2/test-vectors-candidates.json) byte-for-byte. [14-page arXiv preprint](spec/paper/) and [v0.2 RFC roadmap](spec/v0.2/ROADMAP.md) (freeze 2026-05-22) open for public review.
 
 ---
 
@@ -156,7 +156,7 @@ Consume falsify's hooks from your own repo:
 ```yaml
 repos:
   - repo: https://github.com/studio-11-co/falsify
-    rev: v0.1.2
+    rev: v0.1.3
     hooks:
       - id: falsify-guard
       - id: falsify-doctor
