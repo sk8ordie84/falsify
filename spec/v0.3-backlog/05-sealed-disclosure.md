@@ -82,3 +82,12 @@ mechanism for it:
 Neither document references PRML or pre-registration; they are cited here as
 evidence that the hidden-but-provable threshold is a live requirement, not as
 endorsements.
+
+**Precedent for field-level disclosure (added 2026-09-07).** The EMVCo *Agentic
+Payments Framework* draft (v1.0, August 2026) builds its delegation credentials on
+SD-JWT VC, whose selective disclosure works through salted hash commitments: each
+attribute is a separate disclosure `(salt, value)` referenced from the payload by
+its hash, and layers are bound by hash. That is the same construction proposed
+above for the nine PRML fields. Reusing the SD-JWT disclosure encoding (IETF OAuth
+WG) rather than inventing a bespoke leaf format is the obvious option to evaluate
+first.
