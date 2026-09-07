@@ -51,7 +51,7 @@ This is measurable, not anecdotal. Across the 29 case studies published through 
 
 **This isn't what MLflow, Docker, or Model Cards do.** MLflow tracks what happened during a run. Docker and DVC let you re-run. Model Cards and Datasheets describe a model after it ships. All three are *post-hoc* — written after the result is known. PRML is *pre-hoc*: the claim is committed before the result is observable. After the fact every other tool still lets you quietly adjust the story; PRML changes the hash and breaks the audit trail the moment you try.
 
-PRML does not prove an ML result is true. It proves that a specific evaluation claim was committed before it could be silently rewritten. That is a smaller guarantee than reproducibility — and a different one.
+PRML does not prove an ML result is true. It proves that a specific evaluation claim was committed before it could be silently rewritten. That is a smaller guarantee than reproducibility — and a different one. It is evidence, not authority. The governance process that decides whether a model ships still decides; PRML independently proves which criteria object existed at the relevant time, outside the deployment's own history.
 
 **Falsify fixes this with a single idea from science:** you must pre-register the claim *before* you run the experiment — the `falsify lock` → `falsify verify` flow shown at the top. If you change the spec after seeing the data, the hash changes, the audit trail breaks, and CI fails with exit code 3.
 
