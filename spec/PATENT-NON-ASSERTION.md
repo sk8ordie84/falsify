@@ -1,5 +1,7 @@
 # PRML — Patent Non-Assertion Grant (restated)
 
+> **Status: draft, unsigned.** This restated grant takes effect on signature; the date will be recorded here. Until then the covenant of 8 May 2026 and the patent licence in the Community Specification License 1.0 (see LICENSE.md, Section 2) apply.
+
 **PRML — Pre-Registered ML Manifest Specification · Falsify OÜ · September 2026**
 
 This grant accompanies the PRML specification (working draft v0.1, published at spec.falsify.dev/v0.1 under the Community Specification License 1.0, with its reference implementations under the MIT License) and any subsequent version of the same specification published by Falsify OÜ or by any organisation to which stewardship of the specification is transferred.
