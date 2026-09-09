@@ -128,7 +128,7 @@ This repository is the home of **PRML v0.1** — Pre-Registered ML Manifest Spec
 - **[`spec/test-vectors/`](spec/test-vectors/)** — 13 v0.1 normative conformance vectors with locked SHA-256 digests, plus 8 v0.2 vectors and 20 reject vectors (the CI matrix: 21 positive, plus 20 negative for Python and JS and 16 for Go and Rust, which read JSON only)
 - **[`spec/analysis/positioning-v0.1.md`](spec/analysis/positioning-v0.1.md)** — PRML vs in-toto / SLSA / Model Cards / HELM / ClinicalTrials.gov
 - **[`spec/analysis/canonicalization-portability-v0.1.md`](spec/analysis/canonicalization-portability-v0.1.md)** — three cross-language findings from the JS second implementation
-- **[`spec/compliance/AI-Act-mapping-v0.1.md`](spec/compliance/AI-Act-mapping-v0.1.md)** — EU AI Act Article 12/17/18/50/72/73 mapping
+- **[`spec/compliance/AI-Act-mapping-v0.2.md`](spec/compliance/AI-Act-mapping-v0.2.md)** — EU AI Act Article 9(8)/11/12/13/15/17/18/72/73 mapping
 - **[`spec/compliance/landing.md`](spec/compliance/landing.md)** — compliance-audience landing copy
 - **[`spec/paper/`](spec/paper/)** — 14-page preprint manuscript (LaTeX, CC BY 4.0); not posted to a preprint server
 - **[`spec/v0.2/ROADMAP.md`](spec/v0.2/ROADMAP.md)** — v0.2 RFC roadmap (freeze 2026-05-22)

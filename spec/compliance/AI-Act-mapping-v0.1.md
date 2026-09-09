@@ -7,6 +7,8 @@
 **Regulation:** Regulation (EU) 2024/1689 of 13 June 2024 ("AI Act")
 **License:** CC BY 4.0
 
+> **Superseded.** Version 0.2 (9 September 2026) replaces this document: post-Omnibus dates, Article 9(8) as the primary provision, corrected Article 17 sub-points, and corrected evidence semantics ("existed no later than T", not "committed before the run"). See [AI-Act-mapping-v0.2.md](AI-Act-mapping-v0.2.md).
+
 ---
 
 ## 0. Purpose of this document
