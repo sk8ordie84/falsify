@@ -189,7 +189,7 @@ A PRML record with an independent anchor establishes three things:
 It does **not** establish:
 
 - that the criteria were **appropriate** (Article 9(8), Annex IV 4);
-- that the **test ran after T** ("execution linkage"). This is the property a reviewer needs to conclude "prior defined" from the record alone. In v0.1 it comes from the dated, signed test report required by Annex IV 2(g): if the report is dated after T and names the digest, ordering follows from the two documents together. A machine-checkable linkage (`prml-linkage/0`) is a v0.3 work item;
+- that the **test ran after T** ("execution linkage"). This is the property a reviewer needs to conclude "prior defined" from the record alone. In v0.1 the execution side comes from the test logs and the dated, signed test report that Annex IV 2(g) separately requires: if the report is dated after T and names the digest, the two records together document the ordering, but that ordering remains the provider's own account; the record does not establish it independently. A machine-checkable linkage (`prml-linkage/0`) is a v0.3 work item;
 - that the **result is correct**, or that the observed value reported against the threshold was measured honestly. The observed value is producer-asserted;
 - that the provider did not pre-register several criteria sets and publish only the one that passed (selective publication). v0.1 records one claim; suite-level commitments are a roadmap item.
 
